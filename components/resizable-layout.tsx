@@ -5,20 +5,26 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
   BookOpen,
+  ChevronDown,
   ChevronRight,
   FileText,
   Folder,
   FolderOpen,
+  Hash,
   Home,
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
   Search,
   Sun,
+  X,
+  ExternalLink,
+  Link2,
 } from "lucide-react"
 
 import { TreeNode } from "@/lib/docs"
 import { cn } from "@/lib/utils"
+import { getFolderIcon } from "@/lib/folder-icons"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
@@ -40,18 +46,36 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip"
 import { Separator } from "@/components/ui/separator"
+import { Badge } from "@/components/ui/badge"
 
 interface ResizableLayoutProps {
   tree: TreeNode[]
   children: React.ReactNode
 }
 
+// Count files in tree recursively
+function countFiles(nodes: TreeNode[]): number {
+  return nodes.reduce((acc, node) => {
+    if (node.type === "file") return acc + 1
+    if (node.children) return acc + countFiles(node.children)
+    return acc
+  }, 0)
+}
+
 export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [commandOpen, setCommandOpen] = React.useState(false)
   const [isDark, setIsDark] = React.useState(true)
+  const [searchQuery, setSearchQuery] = React.useState("")
   const router = useRouter()
+  const pathname = usePathname()
   const allDocs = React.useMemo(() => flattenTree(tree), [tree])
+
+  // Filter tree based on search
+  const filteredTree = React.useMemo(() => {
+    if (!searchQuery.trim()) return tree
+    return filterTree(tree, searchQuery.toLowerCase())
+  }, [tree, searchQuery])
 
   // Toggle dark mode class on html element
   React.useEffect(() => {
@@ -83,24 +107,25 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
       <ResizablePanelGroup
         direction="horizontal"
         className="min-h-screen"
+        autoSaveId="sidebar-layout"
       >
         <ResizablePanel
-          defaultSize={20}
+          defaultSize={25}
           minSize={15}
-          maxSize={40}
+          maxSize={60}
           collapsible
           collapsedSize={4}
           onCollapse={() => setIsCollapsed(true)}
           onExpand={() => setIsCollapsed(false)}
           className={cn(
-            "bg-sidebar transition-all duration-300",
+            "bg-sidebar transition-all duration-300 !overflow-visible",
             isCollapsed && "min-w-[50px] max-w-[50px]"
           )}
         >
           <div className="flex h-screen flex-col">
             {/* Header */}
             <div className={cn(
-              "flex h-14 items-center border-b border-sidebar-border px-4",
+              "flex h-14 items-center border-b border-sidebar-border px-4 shrink-0",
               isCollapsed && "justify-center px-2"
             )}>
               {isCollapsed ? (
@@ -113,13 +138,13 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
                   <TooltipContent side="right">Avro Docs</TooltipContent>
                 </Tooltip>
               ) : (
-                <Link href="/" className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                <Link href="/" className="flex items-center gap-2 group">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 text-sidebar-primary-foreground shadow-sm group-hover:shadow-md transition-shadow">
                     <BookOpen className="h-4 w-4" />
                   </div>
                   <div className="flex flex-col">
                     <span className="font-semibold text-sidebar-foreground">Avro Docs</span>
-                    <span className="text-xs text-muted-foreground">v1.0.0</span>
+                    <span className="text-[10px] text-muted-foreground">{allDocs.length} documents</span>
                   </div>
                 </Link>
               )}
@@ -127,15 +152,33 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
 
             {/* Search */}
             {!isCollapsed && (
-              <div className="p-3 border-b border-sidebar-border">
+              <div className="p-3 border-b border-sidebar-border shrink-0">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Filter docs..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-9 pr-8 h-9 bg-sidebar-accent/50 border-sidebar-border focus-visible:ring-sidebar-primary"
+                  />
+                  {searchQuery && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6"
+                      onClick={() => setSearchQuery("")}
+                    >
+                      <X className="h-3 w-3" />
+                    </Button>
+                  )}
+                </div>
                 <Button
-                  variant="outline"
-                  className="relative w-full justify-start text-sm text-muted-foreground"
+                  variant="ghost"
+                  className="w-full mt-2 justify-between text-xs text-muted-foreground h-8"
                   onClick={() => setCommandOpen(true)}
                 >
-                  <Search className="mr-2 h-4 w-4" />
-                  Search docs...
-                  <kbd className="pointer-events-none absolute right-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium sm:flex">
+                  <span>Quick search...</span>
+                  <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium">
                     <span className="text-xs">⌘</span>K
                   </kbd>
                 </Button>
@@ -143,7 +186,7 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
             )}
 
             {isCollapsed && (
-              <div className="p-2 border-b border-sidebar-border flex justify-center">
+              <div className="p-2 border-b border-sidebar-border flex justify-center shrink-0">
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
@@ -161,15 +204,20 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
             )}
 
             {/* Navigation */}
-            <ScrollArea className="flex-1">
-              <div className={cn("p-2", isCollapsed && "px-1")}>
+            <ScrollArea className="flex-1" type="always">
+              <div className={cn("p-2 min-w-max", isCollapsed && "px-1")}>
                 {/* Home link */}
                 {isCollapsed ? (
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Link
                         href="/"
-                        className="flex h-8 w-full items-center justify-center rounded-md hover:bg-sidebar-accent"
+                        className={cn(
+                          "flex h-8 w-full items-center justify-center rounded-md transition-colors",
+                          pathname === "/" 
+                            ? "bg-sidebar-primary/10 text-sidebar-primary" 
+                            : "hover:bg-sidebar-accent"
+                        )}
                       >
                         <Home className="h-4 w-4" />
                       </Link>
@@ -179,7 +227,12 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
                 ) : (
                   <Link
                     href="/"
-                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm hover:bg-sidebar-accent"
+                    className={cn(
+                      "flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors",
+                      pathname === "/" 
+                        ? "bg-sidebar-primary/10 text-sidebar-primary font-medium" 
+                        : "hover:bg-sidebar-accent text-sidebar-foreground/80"
+                    )}
                   >
                     <Home className="h-4 w-4" />
                     <span>Home</span>
@@ -188,13 +241,25 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
 
                 {!isCollapsed && (
                   <div className="mt-4">
-                    <div className="px-3 py-2 text-xs font-medium text-muted-foreground">
-                      Documentation
+                    <div className="flex items-center justify-between px-3 py-2">
+                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                        Documentation
+                      </span>
+                      {searchQuery && (
+                        <Badge variant="secondary" className="text-[10px] h-5">
+                          {countFiles(filteredTree)} results
+                        </Badge>
+                      )}
                     </div>
-                    <nav className="space-y-1">
-                      {tree.map((node) => (
+                    <nav className="space-y-0.5">
+                      {filteredTree.map((node) => (
                         <TreeItem key={node.path} node={node} depth={0} />
                       ))}
+                      {filteredTree.length === 0 && searchQuery && (
+                        <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+                          No documents found
+                        </div>
+                      )}
                     </nav>
                   </div>
                 )}
@@ -206,7 +271,12 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
                         <TooltipTrigger asChild>
                           <Link
                             href={`/docs/${node.path}`}
-                            className="flex h-8 w-full items-center justify-center rounded-md hover:bg-sidebar-accent"
+                            className={cn(
+                              "flex h-8 w-full items-center justify-center rounded-md transition-colors",
+                              pathname?.startsWith(`/docs/${node.path}`)
+                                ? "bg-sidebar-primary/10 text-sidebar-primary"
+                                : "hover:bg-sidebar-accent"
+                            )}
                           >
                             {node.type === "folder" ? (
                               <Folder className="h-4 w-4" />
@@ -225,7 +295,7 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
 
             {/* Footer */}
             <div className={cn(
-              "border-t border-sidebar-border p-3",
+              "border-t border-sidebar-border p-3 shrink-0",
               isCollapsed && "p-2"
             )}>
               {isCollapsed ? (
@@ -259,7 +329,7 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
 
         <ResizablePanel defaultSize={80} minSize={50}>
           <div className="flex h-screen flex-col">
-            <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4">
+            <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button
@@ -280,10 +350,12 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
                 </TooltipContent>
               </Tooltip>
               <Separator orientation="vertical" className="h-4" />
-              <span className="text-sm text-muted-foreground">Documentation</span>
+              <Breadcrumbs />
             </header>
-            <main className="flex-1 overflow-auto p-6">
-              {children}
+            <main className="flex-1 overflow-auto">
+              <div className="max-w-4xl mx-auto p-6">
+                {children}
+              </div>
             </main>
           </div>
         </ResizablePanel>
@@ -294,17 +366,20 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
         <CommandList>
           <CommandEmpty>No results found.</CommandEmpty>
           <CommandGroup heading="Pages">
-            {allDocs.slice(0, 20).map((doc) => (
+            {allDocs.slice(0, 30).map((doc) => (
               <CommandItem
                 key={doc.path}
                 value={`${doc.name} ${doc.path}`}
                 onSelect={() => handleSelect(doc.path)}
+                className="flex items-center gap-2"
               >
-                <FileText className="mr-2 h-4 w-4" />
-                <span>{doc.name}</span>
-                <span className="ml-2 text-xs text-muted-foreground">
-                  {doc.path}
-                </span>
+                <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="flex flex-col">
+                  <span>{doc.name}</span>
+                  <span className="text-xs text-muted-foreground">
+                    {doc.path}
+                  </span>
+                </div>
               </CommandItem>
             ))}
           </CommandGroup>
@@ -314,84 +389,135 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
   )
 }
 
+function Breadcrumbs() {
+  const pathname = usePathname()
+  
+  if (!pathname || pathname === "/") {
+    return <span className="text-sm text-muted-foreground">Home</span>
+  }
+  
+  const parts = pathname.split("/").filter(Boolean)
+  
+  return (
+    <nav className="flex items-center gap-1 text-sm overflow-hidden">
+      <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+        Home
+      </Link>
+      {parts.map((part, index) => {
+        const href = "/" + parts.slice(0, index + 1).join("/")
+        const isLast = index === parts.length - 1
+        const name = part.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+        
+        return (
+          <React.Fragment key={href}>
+            <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
+            {isLast ? (
+              <span className="text-foreground font-medium truncate">{name}</span>
+            ) : (
+              <Link href={href} className="text-muted-foreground hover:text-foreground transition-colors truncate">
+                {name}
+              </Link>
+            )}
+          </React.Fragment>
+        )
+      })}
+    </nav>
+  )
+}
+
 function TreeItem({ node, depth }: { node: TreeNode; depth: number }) {
   const pathname = usePathname()
   const isInPath = pathname?.startsWith(`/docs/${node.path}`)
   const isActive = pathname === `/docs/${node.path}/` || pathname === `/docs/${node.path}`
   const hasChildren = node.type === "folder" && node.children && node.children.length > 0
+  const [isOpen, setIsOpen] = React.useState(isInPath)
 
-  // Відступ для папок
-  const folderPaddingLeft = 8 + depth * 20
-  // Відступ для файлів - додатковий відступ щоб вони були правіше від папок
-  const filePaddingLeft = 8 + depth * 20 + 24
+  const paddingLeft = 12 + depth * 16
 
   if (node.type === "file") {
     return (
-      <div className="relative">
-        {depth > 0 && (
-          <div 
-            className="absolute left-0 top-0 bottom-0 w-px bg-sidebar-border" 
-            style={{ left: `${8 + (depth - 1) * 20 + 6}px` }}
-          />
+      <Link
+        href={`/docs/${node.path}/`}
+        className={cn(
+          "group flex items-center gap-2 rounded-md py-1.5 pr-2 text-sm transition-all",
+          "hover:bg-sidebar-accent",
+          isActive
+            ? "bg-sidebar-primary/10 text-sidebar-primary font-medium"
+            : "text-sidebar-foreground/70 hover:text-sidebar-foreground"
         )}
-        <Link
-          href={`/docs/${node.path}/`}
-          className={cn(
-            "flex items-center gap-2 rounded-md py-1.5 text-sm transition-colors",
-            "hover:bg-sidebar-accent",
-            isActive
-              ? "bg-sidebar-primary/10 text-sidebar-primary font-medium"
-              : "text-sidebar-foreground/80"
-          )}
-          style={{ paddingLeft: filePaddingLeft }}
-        >
-          <FileText className="h-4 w-4 shrink-0" />
-          <span>{node.name}</span>
-        </Link>
-      </div>
+        style={{ paddingLeft }}
+      >
+        <Hash className={cn(
+          "h-3.5 w-3.5 shrink-0 transition-colors",
+          isActive ? "text-sidebar-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"
+        )} />
+        <span className="whitespace-nowrap">{node.name}</span>
+      </Link>
     )
   }
 
+  const fileCount = node.children ? countFiles(node.children) : 0
+
   return (
-    <div className="relative">
-      {depth > 0 && (
-        <div 
-          className="absolute left-0 top-0 bottom-0 w-px bg-sidebar-border" 
-          style={{ left: `${8 + (depth - 1) * 20 + 6}px` }}
-        />
+    <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+      <CollapsibleTrigger asChild>
+        <button
+          className={cn(
+            "group flex w-full items-center gap-2 rounded-md py-1.5 pr-2 text-sm transition-all",
+            "hover:bg-sidebar-accent",
+            isActive
+              ? "bg-sidebar-primary/10 text-sidebar-primary font-medium"
+              : "text-sidebar-foreground/80 hover:text-sidebar-foreground"
+          )}
+          style={{ paddingLeft }}
+        >
+          <ChevronDown className={cn(
+            "h-4 w-4 shrink-0 transition-transform duration-200",
+            !isOpen && "-rotate-90"
+          )} />
+          {(() => {
+            const FolderIcon = getFolderIcon(node.name)
+            return (
+              <FolderIcon className={cn(
+                "h-4 w-4 shrink-0",
+                isOpen ? "text-sidebar-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"
+              )} />
+            )
+          })()}
+          <span className="whitespace-nowrap flex-1 text-left">{node.name}</span>
+          <span className="text-[10px] text-muted-foreground tabular-nums ml-2">{fileCount}</span>
+        </button>
+      </CollapsibleTrigger>
+      {hasChildren && (
+        <CollapsibleContent className="relative">
+          <div 
+            className="absolute top-0 bottom-2 w-px bg-sidebar-border/50" 
+            style={{ left: `${paddingLeft + 7}px` }}
+          />
+          {node.children!.map((child) => (
+            <TreeItem key={child.path} node={child} depth={depth + 1} />
+          ))}
+        </CollapsibleContent>
       )}
-      <Collapsible defaultOpen={isInPath}>
-        <CollapsibleTrigger asChild>
-          <button
-            className={cn(
-              "flex w-full items-center gap-2 rounded-md py-1.5 text-sm transition-colors",
-              "hover:bg-sidebar-accent",
-              isActive
-                ? "bg-sidebar-primary/10 text-sidebar-primary font-medium"
-                : "text-sidebar-foreground/80"
-            )}
-            style={{ paddingLeft: folderPaddingLeft }}
-          >
-            <ChevronRight className="h-4 w-4 shrink-0 transition-transform duration-200 [[data-state=open]>&]:rotate-90" />
-            <Folder className="h-4 w-4 shrink-0 [[data-state=open]>&]:hidden" />
-            <FolderOpen className="h-4 w-4 shrink-0 hidden [[data-state=open]>&]:block text-sidebar-primary" />
-            <span>{node.name}</span>
-          </button>
-        </CollapsibleTrigger>
-        {hasChildren && (
-          <CollapsibleContent className="relative">
-            <div 
-              className="absolute top-0 bottom-2 w-px bg-sidebar-border" 
-              style={{ left: `${folderPaddingLeft + 6}px` }}
-            />
-            {node.children!.map((child) => (
-              <TreeItem key={child.path} node={child} depth={depth + 1} />
-            ))}
-          </CollapsibleContent>
-        )}
-      </Collapsible>
-    </div>
+    </Collapsible>
   )
+}
+
+function filterTree(nodes: TreeNode[], query: string): TreeNode[] {
+  return nodes
+    .map((node) => {
+      if (node.type === "folder" && node.children) {
+        const filteredChildren = filterTree(node.children, query)
+        if (filteredChildren.length > 0) {
+          return { ...node, children: filteredChildren }
+        }
+      }
+      if (node.name.toLowerCase().includes(query)) {
+        return node
+      }
+      return null
+    })
+    .filter(Boolean) as TreeNode[]
 }
 
 function flattenTree(nodes: TreeNode[]): { name: string; path: string }[] {

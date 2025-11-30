@@ -218,7 +218,12 @@
 }
 
 .doc-content a {
-  @apply text-primary hover:underline;
+  @apply text-blue-500 dark:text-blue-400 underline decoration-blue-500/30 dark:decoration-blue-400/30 underline-offset-2 
+    hover:decoration-blue-500 dark:hover:decoration-blue-400 transition-all font-medium;
+}
+
+.doc-content a:hover {
+  @apply decoration-2;
 }
 
 .doc-content img {
