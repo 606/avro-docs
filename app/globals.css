@@ -1,0 +1,285 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 5.9% 10%;
+    --radius: 0.5rem;
+
+    --sidebar: 0 0% 98%;
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 240 5.9% 90%;
+    --sidebar-ring: 240 5.9% 10%;
+  }
+
+  .dark {
+    --background: 0 0% 7%;
+    --foreground: 0 0% 95%;
+    --card: 0 0% 7%;
+    --card-foreground: 0 0% 95%;
+    --popover: 0 0% 7%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 7%;
+    --secondary: 0 0% 12%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 0 0% 64%;
+    --accent: 0 0% 12%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 18%;
+    --input: 0 0% 12%;
+    --ring: 0 0% 83.1%;
+
+    --sidebar: 0 0% 7%;
+    --sidebar-background: 0 0% 7%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 0 0% 98%;
+    --sidebar-primary-foreground: 0 0% 7%;
+    --sidebar-accent: 0 0% 12%;
+    --sidebar-accent-foreground: 0 0% 98%;
+    --sidebar-border: 0 0% 18%;
+    --sidebar-ring: 0 0% 83.1%;
+  }
+}
+
+@layer base {
+  html {
+    --sidebar-width: 16rem;
+    --sidebar-width-icon: 3rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* App Layout */
+.app-container {
+  @apply flex min-h-screen;
+}
+
+.main-content {
+  @apply flex-1 ml-[280px] p-8 max-w-4xl;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    @apply ml-0 p-4;
+  }
+}
+
+/* Documentation Content Styles */
+.doc-content {
+  @apply leading-relaxed;
+}
+
+.doc-content h1 {
+  @apply text-3xl font-bold mb-4 pb-3 border-b border-border;
+}
+
+.doc-content h2 {
+  @apply text-2xl font-semibold mt-8 mb-4;
+}
+
+.doc-content h3 {
+  @apply text-xl font-semibold mt-6 mb-3;
+}
+
+.doc-content h4 {
+  @apply text-lg font-semibold mt-5 mb-2;
+}
+
+.doc-content p {
+  @apply mb-4 text-foreground;
+}
+
+.doc-content ul,
+.doc-content ol {
+  @apply mb-4 pl-6;
+}
+
+.doc-content li {
+  @apply mb-2;
+}
+
+.doc-content code {
+  @apply bg-muted px-1.5 py-0.5 rounded text-sm font-mono;
+}
+
+/* Code block wrapper styles */
+.doc-content .code-block-wrapper {
+  @apply mb-4 rounded-lg border border-border overflow-hidden;
+}
+
+.doc-content .code-block-wrapper .code-block-header {
+  @apply flex items-center justify-between border-b border-border px-4 py-2;
+  background-color: hsl(var(--muted));
+}
+
+.doc-content .code-block-wrapper .code-block-content {
+  @apply overflow-x-auto;
+  background-color: #1e1e1e;
+}
+
+.dark .doc-content .code-block-wrapper .code-block-content {
+  background-color: #1a1a1a;
+}
+
+.doc-content .code-block-wrapper pre {
+  @apply !bg-transparent !border-0 !rounded-none !m-0 p-4;
+}
+
+.doc-content .code-block-wrapper pre code {
+  @apply !bg-transparent p-0 text-sm leading-relaxed;
+}
+
+.doc-content .code-block-wrapper .copy-button {
+  @apply px-2 py-1 rounded text-xs font-medium transition-all;
+}
+
+.doc-content .code-block-wrapper .copy-button:hover {
+  @apply bg-accent text-accent-foreground;
+}
+
+/* Shiki theme overrides */
+.doc-content .shiki {
+  @apply p-4;
+  background-color: #1e1e1e !important;
+}
+
+.dark .doc-content .shiki {
+  background-color: #1a1a1a !important;
+}
+
+.doc-content .shiki code {
+  @apply !bg-transparent;
+}
+
+/* Fallback for non-wrapped pre blocks */
+.doc-content pre:not(.shiki) {
+  @apply bg-muted border border-border rounded-lg p-4 overflow-x-auto mb-4;
+}
+
+.doc-content pre:not(.shiki) code {
+  @apply bg-transparent p-0 text-sm leading-relaxed;
+}
+
+.doc-content blockquote {
+  @apply border-l-4 border-primary my-4 py-3 px-5 bg-muted/50 rounded-r-lg;
+}
+
+.doc-content blockquote p {
+  @apply m-0 text-muted-foreground;
+}
+
+.doc-content table {
+  @apply w-full border-collapse mb-4;
+}
+
+.doc-content th,
+.doc-content td {
+  @apply border border-border py-2.5 px-3.5 text-left;
+}
+
+.doc-content th {
+  @apply bg-muted font-semibold;
+}
+
+.doc-content a {
+  @apply text-primary hover:underline;
+}
+
+.doc-content img {
+  @apply max-w-full h-auto rounded-lg my-4;
+}
+
+.doc-content hr {
+  @apply border-none border-t border-border my-8;
+}
+
+/* Callout Styles */
+.doc-content blockquote strong {
+  @apply text-foreground;
+}
+
+/* Home Page */
+.home-page h1 {
+  @apply text-4xl font-bold mb-4;
+}
+
+.home-page .subtitle {
+  @apply text-lg text-muted-foreground mb-12;
+}
+
+.categories-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+.category-card {
+  @apply bg-card border border-border rounded-lg p-5 transition-colors hover:border-primary;
+}
+
+.category-card h2 {
+  @apply text-lg font-semibold mb-3 text-foreground;
+}
+
+.category-card ul {
+  @apply list-none p-0 m-0;
+}
+
+.category-card li {
+  @apply py-1 text-sm;
+}
+
+.category-card .more-items {
+  @apply text-muted-foreground italic;
+}
+
+/* Breadcrumbs */
+.breadcrumbs {
+  @apply flex items-center gap-2 mb-6 text-sm text-muted-foreground flex-wrap;
+}
+
+.breadcrumbs a {
+  @apply text-muted-foreground hover:text-primary transition-colors;
+}
+
+.breadcrumbs .separator {
+  @apply text-muted-foreground/50;
+}
+
+.breadcrumbs .current {
+  @apply text-foreground font-medium;
+}
