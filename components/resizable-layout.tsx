@@ -47,6 +47,15 @@ import {
 } from "@/components/ui/tooltip"
 import { Separator } from "@/components/ui/separator"
 import { Badge } from "@/components/ui/badge"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import { Palette, Check, Monitor } from "lucide-react"
 
 interface ResizableLayoutProps {
   tree: TreeNode[]
@@ -65,7 +74,7 @@ function countFiles(nodes: TreeNode[]): number {
 export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [commandOpen, setCommandOpen] = React.useState(false)
-  const [isDark, setIsDark] = React.useState(true)
+  const [theme, setTheme] = React.useState<'dark' | 'light' | 'nord' | 'dracula' | 'github' | 'system'>('dark')
   const [searchQuery, setSearchQuery] = React.useState("")
   const router = useRouter()
   const pathname = usePathname()
@@ -77,14 +86,29 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
     return filterTree(tree, searchQuery.toLowerCase())
   }, [tree, searchQuery])
 
-  // Toggle dark mode class on html element
+  // Toggle dark mode class on html element based on theme
   React.useEffect(() => {
-    if (isDark) {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
+    const root = document.documentElement
+    // Remove all theme classes
+    root.classList.remove('dark', 'light', 'theme-nord', 'theme-dracula', 'theme-github')
+    
+    let effectiveTheme = theme
+    if (theme === 'system') {
+      effectiveTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
     }
-  }, [isDark])
+    
+    if (effectiveTheme === 'light') {
+      root.classList.add('light')
+    } else if (effectiveTheme === 'nord') {
+      root.classList.add('dark', 'theme-nord')
+    } else if (effectiveTheme === 'dracula') {
+      root.classList.add('dark', 'theme-dracula')
+    } else if (effectiveTheme === 'github') {
+      root.classList.add('dark', 'theme-github')
+    } else {
+      root.classList.add('dark')
+    }
+  }, [theme])
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -292,33 +316,136 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
               </div>
             </ScrollArea>
 
-            {/* Footer */}
+            {/* Footer - Theme Selector */}
             <div className={cn(
               "border-t border-sidebar-border p-3 shrink-0",
               isCollapsed && "p-2"
             )}>
               {isCollapsed ? (
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8 w-full"
-                      onClick={() => setIsDark(!isDark)}
-                    >
-                      {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side="right">Toggle theme</TooltipContent>
-                </Tooltip>
+                <DropdownMenu>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 w-full"
+                        >
+                          <Palette className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Choose theme</TooltipContent>
+                  </Tooltip>
+                  <DropdownMenuContent side="right" align="end" className="w-48">
+                    <DropdownMenuLabel>Choose Theme</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setTheme('light')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sun className="h-4 w-4" />
+                        <span>Light</span>
+                      </div>
+                      {theme === 'light' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('dark')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Moon className="h-4 w-4" />
+                        <span>Dark</span>
+                      </div>
+                      {theme === 'dark' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('system')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Monitor className="h-4 w-4" />
+                        <span>System</span>
+                      </div>
+                      {theme === 'system' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-[10px] font-normal text-muted-foreground">Color Schemes</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setTheme('nord')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#5E81AC]" />
+                        <span>Nord</span>
+                      </div>
+                      {theme === 'nord' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('dracula')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#BD93F9]" />
+                        <span>Dracula</span>
+                      </div>
+                      {theme === 'dracula' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('github')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#58A6FF]" />
+                        <span>GitHub Dark</span>
+                      </div>
+                      {theme === 'github' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               ) : (
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    {isDark ? <Moon className="h-4 w-4" /> : <Sun className="h-4 w-4" />}
-                    <span>Dark Mode</span>
-                  </div>
-                  <Switch checked={isDark} onCheckedChange={setIsDark} />
-                </div>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="w-full justify-between h-9 px-3">
+                      <div className="flex items-center gap-2 text-sm">
+                        <Palette className="h-4 w-4" />
+                        <span>Theme: {theme.charAt(0).toUpperCase() + theme.slice(1)}</span>
+                      </div>
+                      <ChevronDown className="h-4 w-4 opacity-50" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-[--radix-dropdown-menu-trigger-width]">
+                    <DropdownMenuLabel>Choose Theme</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => setTheme('light')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Sun className="h-4 w-4" />
+                        <span>Light</span>
+                      </div>
+                      {theme === 'light' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('dark')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Moon className="h-4 w-4" />
+                        <span>Dark</span>
+                      </div>
+                      {theme === 'dark' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('system')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Monitor className="h-4 w-4" />
+                        <span>System</span>
+                      </div>
+                      {theme === 'system' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-[10px] font-normal text-muted-foreground">Color Schemes</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setTheme('nord')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#5E81AC]" />
+                        <span>Nord</span>
+                      </div>
+                      {theme === 'nord' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('dracula')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#BD93F9]" />
+                        <span>Dracula</span>
+                      </div>
+                      {theme === 'dracula' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('github')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#58A6FF]" />
+                        <span>GitHub Dark</span>
+                      </div>
+                      {theme === 'github' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               )}
             </div>
           </div>
