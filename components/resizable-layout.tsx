@@ -81,12 +81,12 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
   const pathname = usePathname()
   const allDocs = React.useMemo(() => flattenTree(tree), [tree])
 
-  // Load theme from localStorage on mount
+  // Load saved state from localStorage on mount
   React.useEffect(() => {
     const savedTheme = localStorage.getItem('avro-docs-theme') as typeof theme
-    if (savedTheme) {
-      setTheme(savedTheme)
-    }
+    const savedCollapsed = localStorage.getItem('avro-docs-sidebar-collapsed') === 'true'
+    if (savedTheme) setTheme(savedTheme)
+    setIsCollapsed(savedCollapsed)
     setMounted(true)
   }, [])
 
@@ -96,6 +96,13 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
       localStorage.setItem('avro-docs-theme', theme)
     }
   }, [theme, mounted])
+
+  // Save sidebar collapsed state
+  React.useEffect(() => {
+    if (mounted) {
+      localStorage.setItem('avro-docs-sidebar-collapsed', String(isCollapsed))
+    }
+  }, [isCollapsed, mounted])
 
   // Filter tree based on search
   const filteredTree = React.useMemo(() => {
@@ -170,7 +177,6 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
       <ResizablePanelGroup
         direction="horizontal"
         className="min-h-screen"
-        autoSaveId="sidebar-layout"
       >
         <ResizablePanel
           defaultSize={25}
@@ -505,7 +511,7 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
                     <Button variant="ghost" className="w-full justify-between h-9 px-3">
                       <div className="flex items-center gap-2 text-sm">
                         <Palette className="h-4 w-4" />
-                        <span>Theme: {theme.charAt(0).toUpperCase() + theme.slice(1)}</span>
+                        <span>Theme{mounted ? `: ${theme.charAt(0).toUpperCase() + theme.slice(1).replace(/-/g, ' ')}` : ''}</span>
                       </div>
                       <ChevronDown className="h-4 w-4 opacity-50" />
                     </Button>
@@ -684,7 +690,7 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
                 key={doc.path}
                 value={`${doc.name} ${doc.path}`}
                 onSelect={() => handleSelect(doc.path)}
-                className="flex items-center gap-2"
+                className="flex items-center gap-2 aria-selected:bg-secondary aria-selected:text-secondary-foreground"
               >
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="flex flex-col">
