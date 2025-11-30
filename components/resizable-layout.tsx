@@ -74,11 +74,28 @@ function countFiles(nodes: TreeNode[]): number {
 export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [commandOpen, setCommandOpen] = React.useState(false)
-  const [theme, setTheme] = React.useState<'dark' | 'light' | 'nord' | 'dracula' | 'github' | 'system'>('dark')
+  const [theme, setTheme] = React.useState<'dark' | 'light' | 'nord' | 'dracula' | 'github' | 'system' | 'solarized-light' | 'rose-pine-dawn' | 'catppuccin-latte' | 'one-light' | 'ayu-light' | 'solarized-dark' | 'rose-pine' | 'catppuccin-mocha' | 'one-dark' | 'ayu-dark'>('dark')
+  const [mounted, setMounted] = React.useState(false)
   const [searchQuery, setSearchQuery] = React.useState("")
   const router = useRouter()
   const pathname = usePathname()
   const allDocs = React.useMemo(() => flattenTree(tree), [tree])
+
+  // Load theme from localStorage on mount
+  React.useEffect(() => {
+    const savedTheme = localStorage.getItem('avro-docs-theme') as typeof theme
+    if (savedTheme) {
+      setTheme(savedTheme)
+    }
+    setMounted(true)
+  }, [])
+
+  // Save theme to localStorage when it changes
+  React.useEffect(() => {
+    if (mounted) {
+      localStorage.setItem('avro-docs-theme', theme)
+    }
+  }, [theme, mounted])
 
   // Filter tree based on search
   const filteredTree = React.useMemo(() => {
@@ -88,9 +105,11 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
 
   // Toggle dark mode class on html element based on theme
   React.useEffect(() => {
+    if (!mounted) return
+    
     const root = document.documentElement
     // Remove all theme classes
-    root.classList.remove('dark', 'light', 'theme-nord', 'theme-dracula', 'theme-github')
+    root.classList.remove('dark', 'light', 'theme-nord', 'theme-dracula', 'theme-github', 'theme-solarized-light', 'theme-rose-pine-dawn', 'theme-catppuccin-latte', 'theme-one-light', 'theme-ayu-light', 'theme-solarized-dark', 'theme-rose-pine', 'theme-catppuccin-mocha', 'theme-one-dark', 'theme-ayu-dark')
     
     let effectiveTheme = theme
     if (theme === 'system') {
@@ -105,10 +124,30 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
       root.classList.add('dark', 'theme-dracula')
     } else if (effectiveTheme === 'github') {
       root.classList.add('dark', 'theme-github')
+    } else if (effectiveTheme === 'solarized-light') {
+      root.classList.add('light', 'theme-solarized-light')
+    } else if (effectiveTheme === 'rose-pine-dawn') {
+      root.classList.add('light', 'theme-rose-pine-dawn')
+    } else if (effectiveTheme === 'catppuccin-latte') {
+      root.classList.add('light', 'theme-catppuccin-latte')
+    } else if (effectiveTheme === 'one-light') {
+      root.classList.add('light', 'theme-one-light')
+    } else if (effectiveTheme === 'ayu-light') {
+      root.classList.add('light', 'theme-ayu-light')
+    } else if (effectiveTheme === 'solarized-dark') {
+      root.classList.add('dark', 'theme-solarized-dark')
+    } else if (effectiveTheme === 'rose-pine') {
+      root.classList.add('dark', 'theme-rose-pine')
+    } else if (effectiveTheme === 'catppuccin-mocha') {
+      root.classList.add('dark', 'theme-catppuccin-mocha')
+    } else if (effectiveTheme === 'one-dark') {
+      root.classList.add('dark', 'theme-one-dark')
+    } else if (effectiveTheme === 'ayu-dark') {
+      root.classList.add('dark', 'theme-ayu-dark')
     } else {
       root.classList.add('dark')
     }
-  }, [theme])
+  }, [theme, mounted])
 
   React.useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -384,6 +423,80 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
                       </div>
                       {theme === 'github' && <Check className="h-4 w-4" />}
                     </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-[10px] font-normal text-muted-foreground">Light Themes</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setTheme('solarized-light')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#B58900]" />
+                        <span>Solarized Light</span>
+                      </div>
+                      {theme === 'solarized-light' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('rose-pine-dawn')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#D7827E]" />
+                        <span>Rosé Pine Dawn</span>
+                      </div>
+                      {theme === 'rose-pine-dawn' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('catppuccin-latte')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#8839EF]" />
+                        <span>Catppuccin Latte</span>
+                      </div>
+                      {theme === 'catppuccin-latte' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('one-light')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#4078F2]" />
+                        <span>One Light</span>
+                      </div>
+                      {theme === 'one-light' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('ayu-light')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#FF9940]" />
+                        <span>Ayu Light</span>
+                      </div>
+                      {theme === 'ayu-light' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-[10px] font-normal text-muted-foreground">Dark Variants</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setTheme('solarized-dark')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#268BD2]" />
+                        <span>Solarized Dark</span>
+                      </div>
+                      {theme === 'solarized-dark' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('rose-pine')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#EB6F92]" />
+                        <span>Rosé Pine</span>
+                      </div>
+                      {theme === 'rose-pine' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('catppuccin-mocha')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#CBA6F7]" />
+                        <span>Catppuccin Mocha</span>
+                      </div>
+                      {theme === 'catppuccin-mocha' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('one-dark')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#61AFEF]" />
+                        <span>One Dark</span>
+                      </div>
+                      {theme === 'one-dark' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('ayu-dark')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#FFCC66]" />
+                        <span>Ayu Dark</span>
+                      </div>
+                      {theme === 'ayu-dark' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
               ) : (
@@ -443,6 +556,80 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
                         <span>GitHub Dark</span>
                       </div>
                       {theme === 'github' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-[10px] font-normal text-muted-foreground">Light Themes</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setTheme('solarized-light')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#B58900]" />
+                        <span>Solarized Light</span>
+                      </div>
+                      {theme === 'solarized-light' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('rose-pine-dawn')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#D7827E]" />
+                        <span>Rosé Pine Dawn</span>
+                      </div>
+                      {theme === 'rose-pine-dawn' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('catppuccin-latte')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#8839EF]" />
+                        <span>Catppuccin Latte</span>
+                      </div>
+                      {theme === 'catppuccin-latte' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('one-light')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#4078F2]" />
+                        <span>One Light</span>
+                      </div>
+                      {theme === 'one-light' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('ayu-light')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#FF9940]" />
+                        <span>Ayu Light</span>
+                      </div>
+                      {theme === 'ayu-light' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="text-[10px] font-normal text-muted-foreground">Dark Variants</DropdownMenuLabel>
+                    <DropdownMenuItem onClick={() => setTheme('solarized-dark')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#268BD2]" />
+                        <span>Solarized Dark</span>
+                      </div>
+                      {theme === 'solarized-dark' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('rose-pine')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#EB6F92]" />
+                        <span>Rosé Pine</span>
+                      </div>
+                      {theme === 'rose-pine' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('catppuccin-mocha')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#CBA6F7]" />
+                        <span>Catppuccin Mocha</span>
+                      </div>
+                      {theme === 'catppuccin-mocha' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('one-dark')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#61AFEF]" />
+                        <span>One Dark</span>
+                      </div>
+                      {theme === 'one-dark' && <Check className="h-4 w-4" />}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setTheme('ayu-dark')} className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="h-4 w-4 rounded-full bg-[#FFCC66]" />
+                        <span>Ayu Dark</span>
+                      </div>
+                      {theme === 'ayu-dark' && <Check className="h-4 w-4" />}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
