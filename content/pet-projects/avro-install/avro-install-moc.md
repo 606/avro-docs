@@ -1,0 +1,42 @@
+---
+title: Avro-Install
+aliases:
+  - Avro-Install
+type: project
+status: open
+priority: medium
+created: 2025-10-21
+parent: "[[./pet-projects/index]]"
+publish: true
+tags:
+  - type/project
+  - status/open
+  - priority/medium
+  - avro
+  - pet-projects
+---
+
+## 🎯 Project Overview
+**Goal**: Unified avro-install via CLI from GitHub
+
+**Timeline**: TBD
+
+## 📋 Key Tasks
+- [ ] Task 1
+- [ ] Task 2
+- [ ] Task 3
+
+## 🔗 Related Links
+- [[../../index|Avro.Cc]]
+- [[../index|Pet Projects]]
+
+## 📝 Notes
+
+## 🏁 Success Criteria
+- [ ] Criterion 1
+- [ ] Criterion 2
+
+---
+
+### Log
+- 2025-10-21 - Project created

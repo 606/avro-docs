@@ -6,7 +6,7 @@ import html from 'remark-html';
 import gfm from 'remark-gfm';
 import { createHighlighter, bundledLanguages, type BundledLanguage } from 'shiki';
 
-const DOCS_DIRECTORY = path.join(process.cwd(), 'avro-cc-github-606');
+const DOCS_DIRECTORY = path.join(process.cwd(), 'content');
 
 // Shiki highlighter singleton
 let highlighterPromise: ReturnType<typeof createHighlighter> | null = null;
