@@ -24,6 +24,7 @@ async function getHighlighter() {
 
 export interface TreeNode {
   name: string;
+  title?: string;
   path: string;
   type: 'file' | 'folder';
   children?: TreeNode[];
@@ -34,6 +35,11 @@ export interface DocContent {
   content: string;
   frontmatter: Record<string, unknown>;
   breadcrumbs: { name: string; path: string }[];
+}
+
+export interface TagInfo {
+  name: string;
+  count: number;
 }
 
 function formatName(name: string): string {
@@ -82,8 +88,21 @@ function buildTree(dir: string, basePath: string = ''): TreeNode[] {
         });
       }
     } else if (item.name.endsWith('.md')) {
+      // Read frontmatter to get title
+      const filePath = path.join(dir, item.name);
+      let title = formatName(item.name);
+      try {
+        const content = fs.readFileSync(filePath, 'utf8');
+        const parsed = matter(content);
+        if (parsed.data.title) {
+          title = parsed.data.title;
+        }
+      } catch (e) {
+        // Use formatted name as fallback
+      }
       tree.push({
         name: formatName(item.name),
+        title,
         path: relativePath.replace(/\.md$/, ''),
         type: 'file',
       });
@@ -98,6 +117,103 @@ export function getDocsTree(): TreeNode[] {
     return [];
   }
   return buildTree(DOCS_DIRECTORY);
+}
+
+// Collect all tags from all documents
+export function getAllTags(): TagInfo[] {
+  const tagCounts = new Map<string, number>();
+
+  function collectTags(dir: string) {
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+
+    for (const item of items) {
+      if (item.name.startsWith('.') || item.name.startsWith('_')) continue;
+
+      const itemPath = path.join(dir, item.name);
+
+      if (item.isDirectory()) {
+        collectTags(itemPath);
+      } else if (item.name.endsWith('.md')) {
+        try {
+          const content = fs.readFileSync(itemPath, 'utf8');
+          const parsed = matter(content);
+          const tags = parsed.data.tags;
+          if (Array.isArray(tags)) {
+            for (const tag of tags) {
+              const tagName = String(tag).toLowerCase();
+              tagCounts.set(tagName, (tagCounts.get(tagName) || 0) + 1);
+            }
+          }
+        } catch (e) {
+          // Skip files with parsing errors
+        }
+      }
+    }
+  }
+
+  if (fs.existsSync(DOCS_DIRECTORY)) {
+    collectTags(DOCS_DIRECTORY);
+  }
+
+  // Convert to array and sort by count (descending)
+  return Array.from(tagCounts.entries())
+    .map(([name, count]) => ({ name, count }))
+    .sort((a, b) => b.count - a.count);
+}
+
+export interface DocWithTags {
+  title: string;
+  path: string;
+  tags: string[];
+  description?: string;
+}
+
+// Get all documents with their tags
+export function getAllDocsWithTags(): DocWithTags[] {
+  const docs: DocWithTags[] = [];
+
+  function collectDocs(dir: string, basePath: string = '') {
+    const items = fs.readdirSync(dir, { withFileTypes: true });
+
+    for (const item of items) {
+      if (item.name.startsWith('.') || item.name.startsWith('_')) continue;
+
+      const itemPath = path.join(dir, item.name);
+      const relativePath = basePath ? `${basePath}/${item.name}` : item.name;
+
+      if (item.isDirectory()) {
+        collectDocs(itemPath, relativePath);
+      } else if (item.name.endsWith('.md')) {
+        try {
+          const content = fs.readFileSync(itemPath, 'utf8');
+          const parsed = matter(content);
+          const tags = parsed.data.tags;
+          if (Array.isArray(tags) && tags.length > 0) {
+            docs.push({
+              title: parsed.data.title || formatName(item.name),
+              path: relativePath.replace(/\.md$/, ''),
+              tags: tags.map((t: unknown) => String(t).toLowerCase()),
+              description: parsed.data.description,
+            });
+          }
+        } catch (e) {
+          // Skip files with parsing errors
+        }
+      }
+    }
+  }
+
+  if (fs.existsSync(DOCS_DIRECTORY)) {
+    collectDocs(DOCS_DIRECTORY);
+  }
+
+  return docs;
+}
+
+// Get documents by specific tag
+export function getDocsByTag(tagName: string): DocWithTags[] {
+  const allDocs = getAllDocsWithTags();
+  return allDocs.filter(doc => doc.tags.includes(tagName.toLowerCase()));
 }
 
 export function getAllDocPaths(): string[] {

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ResizableLayout } from '@/components/resizable-layout';
-import { getDocsTree } from '@/lib/docs';
+import { getDocsTree, getAllTags } from '@/lib/docs';
 
 export const metadata: Metadata = {
   title: 'Avro Docs',
@@ -62,6 +62,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const docsTree = getDocsTree();
+  const allTags = getAllTags();
 
   return (
     <html lang="en" suppressHydrationWarning>
@@ -69,7 +70,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-screen">
-        <ResizableLayout tree={docsTree}>
+        <ResizableLayout tree={docsTree} tags={allTags}>
           {children}
         </ResizableLayout>
       </body>

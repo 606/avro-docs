@@ -22,7 +22,7 @@ import {
   Link2,
 } from "lucide-react"
 
-import { TreeNode } from "@/lib/docs"
+import { TreeNode, TagInfo } from "@/lib/docs"
 import { cn } from "@/lib/utils"
 import { getFolderIcon } from "@/lib/folder-icons"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
@@ -55,10 +55,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Palette, Check, Monitor } from "lucide-react"
+import { Palette, Check, Monitor, Tag } from "lucide-react"
 
 interface ResizableLayoutProps {
   tree: TreeNode[]
+  tags: TagInfo[]
   children: React.ReactNode
 }
 
@@ -71,7 +72,7 @@ function countFiles(nodes: TreeNode[]): number {
   }, 0)
 }
 
-export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
+export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) {
   const [isCollapsed, setIsCollapsed] = React.useState(false)
   const [commandOpen, setCommandOpen] = React.useState(false)
   const [theme, setTheme] = React.useState<'dark' | 'light' | 'nord' | 'dracula' | 'github' | 'system' | 'solarized-light' | 'rose-pine-dawn' | 'catppuccin-latte' | 'one-light' | 'ayu-light' | 'solarized-dark' | 'rose-pine' | 'catppuccin-mocha' | 'one-dark' | 'ayu-dark'>('dark')
@@ -360,6 +361,27 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
                 )}
               </div>
             </ScrollArea>
+
+            {/* Tags Link */}
+            {tags.length > 0 && (
+              <Link
+                href="/tags"
+                className={cn(
+                  "flex items-center gap-2 border-t border-sidebar-border p-3 hover:bg-sidebar-accent/50 transition-colors text-muted-foreground hover:text-foreground",
+                  isCollapsed && "justify-center p-2"
+                )}
+              >
+                <Tag className="h-4 w-4" />
+                {!isCollapsed && (
+                  <>
+                    <span className="text-sm font-medium">Browse Tags</span>
+                    <Badge variant="outline" className="ml-auto text-[10px] h-5 px-1.5">
+                      {tags.length}
+                    </Badge>
+                  </>
+                )}
+              </Link>
+            )}
 
             {/* Footer - Theme Selector */}
             <div className={cn(
@@ -694,7 +716,7 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
               >
                 <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="flex flex-col">
-                  <span>{doc.name}</span>
+                  <span>{doc.title || doc.name}</span>
                   <span className="text-xs text-muted-foreground">
                     {doc.path}
                   </span>
@@ -776,7 +798,7 @@ function TreeItem({ node, depth }: { node: TreeNode; depth: number }) {
           "h-3.5 w-3.5 shrink-0 transition-colors",
           isActive ? "text-sidebar-primary" : "text-muted-foreground group-hover:text-sidebar-foreground"
         )} />
-        <span className="whitespace-nowrap">{node.name}</span>
+        <span className="whitespace-nowrap">{node.title || node.name}</span>
       </Link>
     )
   }
@@ -845,11 +867,11 @@ function filterTree(nodes: TreeNode[], query: string): TreeNode[] {
     .filter(Boolean) as TreeNode[]
 }
 
-function flattenTree(nodes: TreeNode[]): { name: string; path: string }[] {
-  const result: { name: string; path: string }[] = []
+function flattenTree(nodes: TreeNode[]): { name: string; title?: string; path: string }[] {
+  const result: { name: string; title?: string; path: string }[] = []
   for (const node of nodes) {
     if (node.type === "file") {
-      result.push({ name: node.name, path: node.path })
+      result.push({ name: node.name, title: node.title, path: node.path })
     }
     if (node.children) {
       result.push(...flattenTree(node.children))
