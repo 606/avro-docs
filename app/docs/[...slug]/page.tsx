@@ -1,15 +1,5 @@
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { Home } from 'lucide-react';
 import { getDocContent, getAllDocPaths } from '@/lib/docs';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from '@/components/ui/breadcrumb';
 
 interface DocPageProps {
   params: Promise<{
@@ -53,33 +43,6 @@ export default async function DocPage({ params }: DocPageProps) {
 
   return (
     <article className="max-w-4xl">
-      <Breadcrumb className="mb-6">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink asChild>
-              <Link href="/" className="flex items-center gap-1">
-                <Home className="h-4 w-4" />
-                Home
-              </Link>
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          {doc.breadcrumbs.map((crumb, index) => (
-            <>
-              <BreadcrumbSeparator key={`sep-${crumb.path}`} />
-              <BreadcrumbItem key={crumb.path}>
-                {index === doc.breadcrumbs.length - 1 ? (
-                  <BreadcrumbPage>{crumb.name}</BreadcrumbPage>
-                ) : (
-                  <BreadcrumbLink asChild>
-                    <Link href={`/docs/${crumb.path}`}>{crumb.name}</Link>
-                  </BreadcrumbLink>
-                )}
-              </BreadcrumbItem>
-            </>
-          ))}
-        </BreadcrumbList>
-      </Breadcrumb>
-      
       <div className="doc-content" dangerouslySetInnerHTML={{ __html: doc.content }} />
     </article>
   );

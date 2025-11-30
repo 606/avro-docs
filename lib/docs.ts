@@ -5,6 +5,7 @@ import { remark } from 'remark';
 import html from 'remark-html';
 import gfm from 'remark-gfm';
 import { createHighlighter, bundledLanguages, type BundledLanguage } from 'shiki';
+import { scanGlossaryTerms, autoLinkGlossaryTerms } from './glossary';
 
 const DOCS_DIRECTORY = path.join(process.cwd(), 'content');
 
@@ -45,6 +46,9 @@ function formatName(name: string): string {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
+// Folders to hide from sidebar (but still accessible via URL)
+const HIDDEN_FOLDERS = ['glossary'];
+
 function buildTree(dir: string, basePath: string = ''): TreeNode[] {
   const items = fs.readdirSync(dir, { withFileTypes: true });
   const tree: TreeNode[] = [];
@@ -60,6 +64,8 @@ function buildTree(dir: string, basePath: string = ''): TreeNode[] {
     // Skip hidden files and non-markdown files
     if (item.name.startsWith('.')) continue;
     if (item.name.startsWith('_')) continue;
+    // Skip hidden folders
+    if (item.isDirectory() && HIDDEN_FOLDERS.includes(item.name)) continue;
 
     const itemPath = path.join(dir, item.name);
     const relativePath = basePath ? `${basePath}/${item.name}` : item.name;
@@ -317,6 +323,14 @@ export async function getDocContent(slugPath: string): Promise<DocContent | null
     });
   } catch (e) {
     console.warn('Failed to initialize syntax highlighter', e);
+  }
+
+  // Auto-link glossary terms
+  try {
+    const glossaryTerms = scanGlossaryTerms();
+    content = autoLinkGlossaryTerms(content, glossaryTerms, slugPath);
+  } catch (e) {
+    console.warn('Failed to auto-link glossary terms', e);
   }
 
   // Build breadcrumbs

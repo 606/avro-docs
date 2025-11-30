@@ -266,28 +266,27 @@ export function ResizableLayout({ tree, children }: ResizableLayoutProps) {
 
                 {isCollapsed && (
                   <div className="mt-2 space-y-1">
-                    {tree.slice(0, 10).map((node) => (
-                      <Tooltip key={node.path}>
-                        <TooltipTrigger asChild>
-                          <Link
-                            href={`/docs/${node.path}`}
-                            className={cn(
-                              "flex h-8 w-full items-center justify-center rounded-md transition-colors",
-                              pathname?.startsWith(`/docs/${node.path}`)
-                                ? "bg-sidebar-primary/10 text-sidebar-primary"
-                                : "hover:bg-sidebar-accent"
-                            )}
-                          >
-                            {node.type === "folder" ? (
-                              <Folder className="h-4 w-4" />
-                            ) : (
-                              <FileText className="h-4 w-4" />
-                            )}
-                          </Link>
-                        </TooltipTrigger>
-                        <TooltipContent side="right">{node.name}</TooltipContent>
-                      </Tooltip>
-                    ))}
+                    {tree.slice(0, 10).map((node) => {
+                      const FolderIcon = node.type === "folder" ? getFolderIcon(node.name) : FileText;
+                      return (
+                        <Tooltip key={node.path}>
+                          <TooltipTrigger asChild>
+                            <Link
+                              href={`/docs/${node.path}`}
+                              className={cn(
+                                "flex h-8 w-full items-center justify-center rounded-md transition-colors",
+                                pathname?.startsWith(`/docs/${node.path}`)
+                                  ? "bg-sidebar-primary/10 text-sidebar-primary"
+                                  : "hover:bg-sidebar-accent"
+                              )}
+                            >
+                              <FolderIcon className="h-4 w-4" />
+                            </Link>
+                          </TooltipTrigger>
+                          <TooltipContent side="right">{node.name}</TooltipContent>
+                        </Tooltip>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -400,21 +399,27 @@ function Breadcrumbs() {
   
   return (
     <nav className="flex items-center gap-1 text-sm overflow-hidden">
-      <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors shrink-0">
+      <Link href="/" className="text-muted-foreground hover:text-foreground transition-colors shrink-0 flex items-center gap-1">
+        <Home className="h-3.5 w-3.5" />
         Home
       </Link>
       {parts.map((part, index) => {
         const href = "/" + parts.slice(0, index + 1).join("/")
         const isLast = index === parts.length - 1
         const name = part.replace(/-/g, " ").replace(/\b\w/g, c => c.toUpperCase())
+        const BreadcrumbIcon = getFolderIcon(part)
         
         return (
           <React.Fragment key={href}>
             <ChevronRight className="h-3 w-3 text-muted-foreground shrink-0" />
             {isLast ? (
-              <span className="text-foreground font-medium truncate">{name}</span>
+              <span className="text-foreground font-medium truncate flex items-center gap-1">
+                <BreadcrumbIcon className="h-3.5 w-3.5 shrink-0" />
+                {name}
+              </span>
             ) : (
-              <Link href={href} className="text-muted-foreground hover:text-foreground transition-colors truncate">
+              <Link href={href} className="text-muted-foreground hover:text-foreground transition-colors truncate flex items-center gap-1">
+                <BreadcrumbIcon className="h-3.5 w-3.5 shrink-0" />
                 {name}
               </Link>
             )}
