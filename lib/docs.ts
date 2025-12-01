@@ -15,11 +15,27 @@ let highlighterPromise: ReturnType<typeof createHighlighter> | null = null;
 async function getHighlighter() {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
-      themes: ['github-dark', 'github-light'],
+      themes: ['github-dark', 'github-light', 'nord', 'dracula'],
       langs: Object.keys(bundledLanguages) as BundledLanguage[],
     });
   }
   return highlighterPromise;
+}
+
+// Generate slug from heading text
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special chars
+    .replace(/\s+/g, '-') // Spaces to dashes
+    .replace(/-+/g, '-') // Multiple dashes to single
+    .trim();
+}
+
+export interface TocItem {
+  id: string;
+  text: string;
+  level: number;
 }
 
 export interface TreeNode {
@@ -35,6 +51,9 @@ export interface DocContent {
   content: string;
   frontmatter: Record<string, unknown>;
   breadcrumbs: { name: string; path: string }[];
+  toc: TocItem[];
+  readingTime: number;
+  wordCount: number;
 }
 
 export interface TagInfo {
@@ -340,30 +359,77 @@ export async function getDocContent(slugPath: string): Promise<DocContent | null
       const slug = link.toLowerCase().replace(/\s+/g, '-');
       return `[${link}](/docs/${slug})`;
     })
-    // Handle Obsidian callouts > [!note], > [!warning], etc.
-    .replace(/^>\s*\[!(\w+)\]\s*(.*)$/gm, (_, type, title) => {
-      const icons: Record<string, string> = {
-        note: '📝',
-        tip: '💡',
-        warning: '⚠️',
-        danger: '🚨',
-        info: '📌',
-        example: '📋',
-        question: '❓',
-        quote: '💬',
-        success: '✅',
-        failure: '❌',
-        bug: '🐛',
-      };
-      const icon = icons[type.toLowerCase()] || '📝';
-      return `> **${icon} ${title || type.charAt(0).toUpperCase() + type.slice(1)}**`;
-    })
     // Clean up Obsidian-style embeds ![[file]]
     .replace(/!\[\[([^\]]+)\]\]/g, (_, file) => {
       return `*[Embedded: ${file}]*`;
     })
     // Handle #tags by converting to styled spans (will be rendered as text)
     .replace(/(?<!\S)#([a-zA-Z][a-zA-Z0-9-_]*)/g, '`#$1`');
+
+  // Handle Obsidian callouts - convert to custom HTML before markdown processing
+  // Matches > [!type] optional title followed by > content lines
+  const calloutRegex = /^>\s*\[!(\w+)\]\s*(.*?)$((?:\n>\s?.*$)*)/gm;
+  markdownContent = markdownContent.replace(calloutRegex, (_, type, title, body) => {
+    const calloutType = type.toLowerCase();
+    const calloutConfig: Record<string, { icon: string; color: string; bgColor: string }> = {
+      note: { icon: '📝', color: 'blue', bgColor: 'blue' },
+      tip: { icon: '💡', color: 'green', bgColor: 'green' },
+      hint: { icon: '💡', color: 'green', bgColor: 'green' },
+      important: { icon: '❗', color: 'purple', bgColor: 'purple' },
+      warning: { icon: '⚠️', color: 'yellow', bgColor: 'yellow' },
+      caution: { icon: '⚠️', color: 'yellow', bgColor: 'yellow' },
+      danger: { icon: '🚨', color: 'red', bgColor: 'red' },
+      error: { icon: '🚨', color: 'red', bgColor: 'red' },
+      info: { icon: 'ℹ️', color: 'blue', bgColor: 'blue' },
+      example: { icon: '📋', color: 'purple', bgColor: 'purple' },
+      question: { icon: '❓', color: 'cyan', bgColor: 'cyan' },
+      quote: { icon: '💬', color: 'gray', bgColor: 'gray' },
+      success: { icon: '✅', color: 'green', bgColor: 'green' },
+      check: { icon: '✅', color: 'green', bgColor: 'green' },
+      done: { icon: '✅', color: 'green', bgColor: 'green' },
+      failure: { icon: '❌', color: 'red', bgColor: 'red' },
+      fail: { icon: '❌', color: 'red', bgColor: 'red' },
+      bug: { icon: '🐛', color: 'red', bgColor: 'red' },
+      abstract: { icon: '📄', color: 'cyan', bgColor: 'cyan' },
+      summary: { icon: '📄', color: 'cyan', bgColor: 'cyan' },
+      todo: { icon: '☑️', color: 'purple', bgColor: 'purple' },
+    };
+    
+    const config = calloutConfig[calloutType] || { icon: '📝', color: 'blue', bgColor: 'blue' };
+    const displayTitle = title || calloutType.charAt(0).toUpperCase() + calloutType.slice(1);
+    
+    // Clean body content (remove leading > and spaces)
+    const bodyContent = body
+      .split('\n')
+      .map((line: string) => line.replace(/^>\s?/, ''))
+      .join('\n')
+      .trim();
+    
+    return `<div class="callout callout-${calloutType}" data-callout="${calloutType}">
+<div class="callout-title"><span class="callout-icon">${config.icon}</span><span class="callout-title-text">${displayTitle}</span></div>
+<div class="callout-content">
+
+${bodyContent}
+
+</div>
+</div>`;
+  });
+
+  // Calculate word count and reading time
+  const plainText = markdownContent.replace(/```[\s\S]*?```/g, '').replace(/[#*`\[\]()]/g, '');
+  const wordCount = plainText.split(/\s+/).filter(word => word.length > 0).length;
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200)); // ~200 words per minute
+
+  // Extract table of contents from headings
+  const toc: TocItem[] = [];
+  const headingRegex = /^(#{2,4})\s+(.+)$/gm;
+  let headingMatch;
+  while ((headingMatch = headingRegex.exec(markdownContent)) !== null) {
+    const level = headingMatch[1].length;
+    const text = headingMatch[2].replace(/\*\*/g, '').replace(/`/g, '').trim();
+    const id = slugify(text);
+    toc.push({ id, text, level });
+  }
 
   // Process markdown to HTML
   const processedContent = await remark()
@@ -372,6 +438,13 @@ export async function getDocContent(slugPath: string): Promise<DocContent | null
     .process(markdownContent);
 
   let content = processedContent.toString();
+
+  // Add IDs to headings for anchor links
+  content = content.replace(/<(h[2-4])>(.*?)<\/\1>/g, (_, tag, text) => {
+    const cleanText = text.replace(/<[^>]*>/g, '').trim();
+    const id = slugify(cleanText);
+    return `<${tag} id="${id}"><a href="#${id}" class="heading-anchor" aria-hidden="true">#</a>${text}</${tag}>`;
+  });
 
   // Highlight code blocks with Shiki
   try {
@@ -472,5 +545,8 @@ export async function getDocContent(slugPath: string): Promise<DocContent | null
     content,
     frontmatter,
     breadcrumbs,
+    toc,
+    readingTime,
+    wordCount,
   };
 }
