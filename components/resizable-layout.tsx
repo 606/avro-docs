@@ -56,6 +56,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Palette, Check, Monitor, Tag } from "lucide-react"
+import { UserButton } from "@/components/auth/user-button"
 
 interface ResizableLayoutProps {
   tree: TreeNode[]
@@ -692,6 +693,9 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
               </Tooltip>
               <Separator orientation="vertical" className="h-4" />
               <Breadcrumbs />
+              <div className="ml-auto">
+                <UserButton />
+              </div>
             </header>
             <main className="flex-1 overflow-auto">
               <div className="max-w-4xl mx-auto p-6">

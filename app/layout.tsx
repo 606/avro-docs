@@ -3,6 +3,7 @@ import './globals.css';
 import { ResizableLayout } from '@/components/resizable-layout';
 import { CodeBlockCopy } from '@/components/code-block-copy';
 import { getDocsTree, getAllTags } from '@/lib/docs';
+import { SessionProvider } from '@/components/providers/session-provider';
 
 export const metadata: Metadata = {
   title: 'Avro Docs',
@@ -71,10 +72,12 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-screen">
-        <CodeBlockCopy />
-        <ResizableLayout tree={docsTree} tags={allTags}>
-          {children}
-        </ResizableLayout>
+        <SessionProvider>
+          <CodeBlockCopy />
+          <ResizableLayout tree={docsTree} tags={allTags}>
+            {children}
+          </ResizableLayout>
+        </SessionProvider>
       </body>
     </html>
   );
