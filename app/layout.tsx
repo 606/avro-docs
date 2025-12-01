@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ResizableLayout } from '@/components/resizable-layout';
+import { CodeBlockCopy } from '@/components/code-block-copy';
 import { getDocsTree, getAllTags } from '@/lib/docs';
 
 export const metadata: Metadata = {
@@ -70,6 +71,7 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-screen">
+        <CodeBlockCopy />
         <ResizableLayout tree={docsTree} tags={allTags}>
           {children}
         </ResizableLayout>

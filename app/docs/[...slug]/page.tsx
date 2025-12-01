@@ -2,7 +2,7 @@ import { notFound } from 'next/navigation';
 import { getDocContent, getAllDocPaths } from '@/lib/docs';
 import { Clock, BookOpen } from 'lucide-react';
 import { TableOfContents } from '@/components/table-of-contents';
-import { Badge } from '@/components/ui/badge';
+import { DocTags } from '@/components/doc-tags';
 
 interface DocPageProps {
   params: Promise<{
@@ -47,9 +47,9 @@ export default async function DocPage({ params }: DocPageProps) {
   const tags = doc.frontmatter.tags as string[] | undefined;
 
   return (
-    <div className="flex gap-8">
+    <div className="flex gap-12">
       {/* Main content */}
-      <article className="flex-1 min-w-0 max-w-3xl">
+      <article className="flex-1 min-w-0 max-w-4xl">
         {/* Meta info */}
         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-6 flex-wrap">
           <div className="flex items-center gap-1.5">
@@ -64,13 +64,7 @@ export default async function DocPage({ params }: DocPageProps) {
 
         {/* Tags */}
         {tags && tags.length > 0 && (
-          <div className="flex flex-wrap gap-2 mb-6">
-            {tags.map((tag) => (
-              <Badge key={tag} variant="secondary" className="text-xs">
-                {tag}
-              </Badge>
-            ))}
-          </div>
+          <DocTags tags={tags} />
         )}
 
         {/* Content */}
@@ -79,8 +73,8 @@ export default async function DocPage({ params }: DocPageProps) {
 
       {/* Table of Contents - sticky sidebar */}
       {doc.toc.length > 2 && (
-        <aside className="hidden xl:block w-56 shrink-0">
-          <div className="sticky top-8">
+        <aside className="hidden xl:block w-60 shrink-0 ml-8">
+          <div className="sticky top-8 pl-4 border-l border-border">
             <TableOfContents items={doc.toc} />
           </div>
         </aside>

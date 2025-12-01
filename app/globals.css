@@ -826,6 +826,47 @@
   @apply text-muted-foreground italic;
 }
 
+/* Related Section Styles */
+.doc-content .related-section {
+  @apply mt-12 mb-8 rounded-xl border border-border bg-gradient-to-br from-muted/50 to-muted/20 overflow-hidden;
+}
+
+.doc-content .related-header {
+  @apply flex items-center gap-2.5 px-5 py-3.5 border-b border-border bg-muted/50 font-semibold text-foreground;
+}
+
+.doc-content .related-header svg {
+  @apply text-primary;
+}
+
+.doc-content .related-links {
+  @apply p-2;
+}
+
+.doc-content .related-links ul {
+  @apply list-none p-0 m-0 grid gap-1;
+}
+
+.doc-content .related-links li {
+  @apply m-0;
+}
+
+.doc-content .related-links li a {
+  @apply flex items-center gap-2.5 px-3 py-2.5 rounded-lg 
+    text-foreground no-underline font-normal
+    hover:bg-primary/10 hover:text-primary
+    transition-all duration-200;
+}
+
+.doc-content .related-links li a::before {
+  content: '';
+  @apply w-1.5 h-1.5 rounded-full bg-primary/40;
+}
+
+.doc-content .related-links li a:hover::before {
+  @apply bg-primary;
+}
+
 /* Breadcrumbs */
 .breadcrumbs {
   @apply flex items-center gap-2 mb-6 text-sm text-muted-foreground flex-wrap;
