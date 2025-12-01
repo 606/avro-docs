@@ -1,14 +1,18 @@
 /** @type {import('next').NextConfig} */
+
+// Check if deploying to GitHub Pages
+const isGitHubPages = process.env.GITHUB_PAGES === 'true';
+
 const nextConfig = {
-  // Only use static export in production (for GitHub Pages)
-  ...(process.env.NODE_ENV === 'production' ? { output: 'export' } : {}),
+  // Only use static export for GitHub Pages
+  ...(isGitHubPages ? { output: 'export' } : {}),
   trailingSlash: true,
   images: {
     unoptimized: true,
   },
-  // For GitHub Pages deployment
-  basePath: process.env.NODE_ENV === 'production' ? '/avro-docs' : '',
-  assetPrefix: process.env.NODE_ENV === 'production' ? '/avro-docs/' : '',
+  // Only set basePath for GitHub Pages deployment
+  basePath: isGitHubPages ? '/avro-docs' : '',
+  assetPrefix: isGitHubPages ? '/avro-docs/' : '',
 };
 
 module.exports = nextConfig;
