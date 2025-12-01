@@ -1,43 +1,26 @@
-'use client';
+import { Suspense } from 'react';
+import { ErrorContent } from '@/components/auth/error-content';
 
-import { useSearchParams } from 'next/navigation';
-import Link from 'next/link';
-
-export default function AuthErrorPage() {
-  const searchParams = useSearchParams();
-  const error = searchParams.get('error');
-
-  const errorMessages: Record<string, string> = {
-    Configuration: 'There is a problem with the server configuration.',
-    AccessDenied: 'You do not have permission to sign in.',
-    Verification: 'The verification link has expired or has already been used.',
-    Default: 'An error occurred during authentication.',
-  };
-
-  const message = errorMessages[error || ''] || errorMessages.Default;
-
+function ErrorLoading() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="max-w-md w-full space-y-8 p-8 text-center">
-        <div className="text-6xl">🔒</div>
-        <h1 className="text-2xl font-bold text-foreground">Authentication Error</h1>
-        <p className="text-muted-foreground">{message}</p>
-        
-        <div className="space-y-4">
-          <Link 
-            href="/auth/signin"
-            className="block w-full px-4 py-3 border border-border rounded-lg bg-card hover:bg-accent transition-colors"
-          >
-            Try Again
-          </Link>
-          <Link 
-            href="/"
-            className="block text-sm text-muted-foreground hover:text-foreground"
-          >
-            Go to Home
-          </Link>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="max-w-lg w-full space-y-6">
+        <div className="bg-card border border-border rounded-xl p-8 space-y-6">
+          <div className="flex flex-col items-center text-center space-y-4">
+            <div className="w-12 h-12 bg-muted animate-pulse rounded-full" />
+            <div className="h-8 w-48 bg-muted animate-pulse rounded" />
+            <div className="h-4 w-64 bg-muted animate-pulse rounded" />
+          </div>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function AuthErrorPage() {
+  return (
+    <Suspense fallback={<ErrorLoading />}>
+      <ErrorContent />
+    </Suspense>
   );
 }
