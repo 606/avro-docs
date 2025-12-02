@@ -7,7 +7,7 @@ import { SessionProvider } from '@/components/providers/session-provider';
 
 export const metadata: Metadata = {
   title: 'Avro Docs',
-  description: 'Documentation for Avro projects',
+  description: 'Documentaßßtion for Avro projects',
 };
 
 // Script to prevent theme flash - runs before page renders

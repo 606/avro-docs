@@ -4,7 +4,6 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
-  BookOpen,
   ChevronDown,
   ChevronRight,
   FileText,
@@ -12,6 +11,7 @@ import {
   FolderOpen,
   Hash,
   Home,
+  Lock,
   Moon,
   PanelLeftClose,
   PanelLeftOpen,
@@ -25,6 +25,7 @@ import {
 import { TreeNode, TagInfo } from "@/lib/docs"
 import { cn } from "@/lib/utils"
 import { getFolderIcon } from "@/lib/folder-icons"
+import { Logo } from "@/components/logo"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
@@ -56,6 +57,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Palette, Check, Monitor, Tag } from "lucide-react"
+import { AuthButton } from "@/components/auth-button"
+import { useSession } from "next-auth/react"
 import { UserButton } from "@/components/auth/user-button"
 
 interface ResizableLayoutProps {
@@ -81,7 +84,13 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
   const [searchQuery, setSearchQuery] = React.useState("")
   const router = useRouter()
   const pathname = usePathname()
+  const { data: session, status } = useSession()
   const allDocs = React.useMemo(() => flattenTree(tree), [tree])
+
+  // Перевірка доступу до документації
+  const appRole = session?.user?.appRole
+  const isPrivileged = session?.user?.isPrivileged
+  const hasDocsAccess = appRole === "admin" || appRole === "member" || isPrivileged === true
 
   // Load saved state from localStorage on mount
   React.useEffect(() => {
@@ -159,6 +168,9 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
   }, [theme, mounted])
 
   React.useEffect(() => {
+    // Хоткей пошуку тільки для тих, хто має доступ
+    if (!hasDocsAccess) return
+    
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
@@ -167,7 +179,7 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
     }
     document.addEventListener("keydown", down)
     return () => document.removeEventListener("keydown", down)
-  }, [])
+  }, [hasDocsAccess])
 
   const handleSelect = (path: string) => {
     router.push(`/docs/${path}`)
@@ -180,6 +192,8 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
         direction="horizontal"
         className="min-h-screen"
       >
+        {/* Sidebar - only for authorized users */}
+        {hasDocsAccess && (
         <ResizablePanel
           defaultSize={25}
           minSize={15}
@@ -203,26 +217,21 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link href="/" className="flex items-center justify-center">
-                      <BookOpen className="h-5 w-5 text-sidebar-primary" />
+                      <Logo size="sm" />
                     </Link>
                   </TooltipTrigger>
-                  <TooltipContent side="right">Avro Docs</TooltipContent>
+                  <TooltipContent side="right">avro.cc</TooltipContent>
                 </Tooltip>
               ) : (
-                <Link href="/" className="flex items-center gap-2 group">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 text-sidebar-primary-foreground shadow-sm group-hover:shadow-md transition-shadow">
-                    <BookOpen className="h-4 w-4" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-sidebar-foreground">Avro Docs</span>
-                    <span className="text-[10px] text-muted-foreground">{allDocs.length} documents</span>
-                  </div>
+                <Link href="/" className="flex items-center gap-2.5 group">
+                  <Logo size="sm" />
+                  <span className="font-semibold text-sidebar-foreground">avro.cc</span>
                 </Link>
               )}
             </div>
 
-            {/* Search */}
-            {!isCollapsed && (
+            {/* Search - only for authorized users */}
+            {!isCollapsed && hasDocsAccess && (
               <div className="p-3 border-b border-sidebar-border shrink-0">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -312,30 +321,69 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
 
                 {!isCollapsed && (
                   <div className="mt-4">
-                    <div className="flex items-center justify-between px-3 py-2">
-                      <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                        Documentation
-                      </span>
-                      {searchQuery && (
-                        <Badge variant="secondary" className="text-[10px] h-5">
-                          {countFiles(filteredTree)} results
-                        </Badge>
-                      )}
-                    </div>
-                    <nav className="space-y-0.5">
-                      {filteredTree.map((node) => (
-                        <TreeItem key={node.path} node={node} depth={0} />
-                      ))}
-                      {filteredTree.length === 0 && searchQuery && (
-                        <div className="px-3 py-8 text-center text-sm text-muted-foreground">
-                          No documents found
+                    {hasDocsAccess && (
+                      <div className="flex items-center justify-between px-3 py-2">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          Documentation
+                        </span>
+                        {searchQuery && (
+                          <Badge variant="secondary" className="text-[10px] h-5">
+                            {countFiles(filteredTree)} results
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                    {hasDocsAccess ? (
+                      <nav className="space-y-0.5">
+                        {filteredTree.map((node) => (
+                          <TreeItem key={node.path} node={node} depth={0} />
+                        ))}
+                        {filteredTree.length === 0 && searchQuery && (
+                          <div className="px-3 py-8 text-center text-sm text-muted-foreground">
+                            No documents found
+                          </div>
+                        )}
+                      </nav>
+                    ) : (
+                      <div className="relative">
+                        {/* Blurred preview of docs tree */}
+                        <div className="blur-[6px] opacity-40 pointer-events-none select-none" aria-hidden="true">
+                          <nav className="space-y-0.5">
+                            {tree.slice(0, 8).map((node) => {
+                              const FolderIcon = node.type === "folder" ? getFolderIcon(node.name) : FileText;
+                              return (
+                                <div
+                                  key={node.path}
+                                  className="flex items-center gap-2 rounded-md px-3 py-2 text-sm text-sidebar-foreground/80"
+                                >
+                                  <FolderIcon className="h-4 w-4 flex-shrink-0" />
+                                  <span className="truncate">{node.name}</span>
+                                </div>
+                              );
+                            })}
+                          </nav>
                         </div>
-                      )}
-                    </nav>
+                        
+                        {/* Overlay with lock message */}
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-b from-sidebar/80 via-sidebar/90 to-sidebar backdrop-blur-[2px]">
+                          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-sidebar-accent/50 mb-3">
+                            <Lock className="h-5 w-5 text-muted-foreground" />
+                          </div>
+                          <span className="font-medium text-sm mb-1">Access Restricted</span>
+                          <p className="text-xs text-muted-foreground text-center px-4 max-w-[200px]">
+                            {status === "loading"
+                              ? "Loading..."
+                              : !session
+                                ? "Sign in to access documentation"
+                                : "Join avrocc organization to view"}
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {isCollapsed && (
+                {isCollapsed && hasDocsAccess && (
                   <div className="mt-2 space-y-1">
                     {tree.slice(0, 10).map((node) => {
                       const FolderIcon = node.type === "folder" ? getFolderIcon(node.name) : FileText;
@@ -360,11 +408,22 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
                     })}
                   </div>
                 )}
+                
+                {isCollapsed && !hasDocsAccess && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="mt-2 flex h-8 w-full items-center justify-center">
+                        <Lock className="h-4 w-4 text-muted-foreground" />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">Sign in to access docs</TooltipContent>
+                  </Tooltip>
+                )}
               </div>
             </ScrollArea>
 
-            {/* Tags Link */}
-            {tags.length > 0 && (
+            {/* Tags Link - only for authorized */}
+            {tags.length > 0 && hasDocsAccess && (
               <Link
                 href="/tags"
                 className={cn(
@@ -384,7 +443,8 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
               </Link>
             )}
 
-            {/* Footer - Theme Selector */}
+            {/* Footer - Theme Selector - only for authorized */}
+            {hasDocsAccess && (
             <div className={cn(
               "border-t border-sidebar-border p-3 shrink-0",
               isCollapsed && "p-2"
@@ -664,12 +724,14 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
                 </DropdownMenu>
               )}
             </div>
+            )}
           </div>
         </ResizablePanel>
+        )}
 
-        <ResizableHandle withHandle />
+        {hasDocsAccess && <ResizableHandle withHandle />}
 
-        <ResizablePanel defaultSize={80} minSize={50}>
+        <ResizablePanel defaultSize={hasDocsAccess ? 80 : 100} minSize={50}>
           <div className="flex h-screen flex-col">
             <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
               <Tooltip>
