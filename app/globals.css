@@ -625,11 +625,122 @@
   @apply bg-transparent p-0 text-sm leading-relaxed;
 }
 
-.doc-content blockquote {
+/* Heading anchor links */
+.doc-content .heading-anchor {
+  @apply opacity-0 text-muted-foreground no-underline mr-2 transition-opacity;
+}
+
+.doc-content h2:hover .heading-anchor,
+.doc-content h3:hover .heading-anchor,
+.doc-content h4:hover .heading-anchor {
+  @apply opacity-100;
+}
+
+/* Callout Styles */
+.doc-content .callout {
+  @apply my-4 rounded-lg border overflow-hidden;
+}
+
+.doc-content .callout-title {
+  @apply flex items-center gap-2 px-4 py-2.5 font-medium text-sm;
+}
+
+.doc-content .callout-icon {
+  @apply text-base;
+}
+
+.doc-content .callout-content {
+  @apply px-4 pb-4 text-sm;
+}
+
+.doc-content .callout-content p:last-child {
+  @apply mb-0;
+}
+
+/* Callout color variants */
+.doc-content .callout-note,
+.doc-content .callout-info {
+  @apply border-blue-500/30 bg-blue-500/5;
+}
+.doc-content .callout-note .callout-title,
+.doc-content .callout-info .callout-title {
+  @apply bg-blue-500/10 text-blue-600 dark:text-blue-400;
+}
+
+.doc-content .callout-tip,
+.doc-content .callout-hint,
+.doc-content .callout-success,
+.doc-content .callout-check,
+.doc-content .callout-done {
+  @apply border-green-500/30 bg-green-500/5;
+}
+.doc-content .callout-tip .callout-title,
+.doc-content .callout-hint .callout-title,
+.doc-content .callout-success .callout-title,
+.doc-content .callout-check .callout-title,
+.doc-content .callout-done .callout-title {
+  @apply bg-green-500/10 text-green-600 dark:text-green-400;
+}
+
+.doc-content .callout-warning,
+.doc-content .callout-caution {
+  @apply border-yellow-500/30 bg-yellow-500/5;
+}
+.doc-content .callout-warning .callout-title,
+.doc-content .callout-caution .callout-title {
+  @apply bg-yellow-500/10 text-yellow-600 dark:text-yellow-400;
+}
+
+.doc-content .callout-danger,
+.doc-content .callout-error,
+.doc-content .callout-failure,
+.doc-content .callout-fail,
+.doc-content .callout-bug {
+  @apply border-red-500/30 bg-red-500/5;
+}
+.doc-content .callout-danger .callout-title,
+.doc-content .callout-error .callout-title,
+.doc-content .callout-failure .callout-title,
+.doc-content .callout-fail .callout-title,
+.doc-content .callout-bug .callout-title {
+  @apply bg-red-500/10 text-red-600 dark:text-red-400;
+}
+
+.doc-content .callout-example,
+.doc-content .callout-important,
+.doc-content .callout-todo {
+  @apply border-purple-500/30 bg-purple-500/5;
+}
+.doc-content .callout-example .callout-title,
+.doc-content .callout-important .callout-title,
+.doc-content .callout-todo .callout-title {
+  @apply bg-purple-500/10 text-purple-600 dark:text-purple-400;
+}
+
+.doc-content .callout-question,
+.doc-content .callout-abstract,
+.doc-content .callout-summary {
+  @apply border-cyan-500/30 bg-cyan-500/5;
+}
+.doc-content .callout-question .callout-title,
+.doc-content .callout-abstract .callout-title,
+.doc-content .callout-summary .callout-title {
+  @apply bg-cyan-500/10 text-cyan-600 dark:text-cyan-400;
+}
+
+.doc-content .callout-quote {
+  @apply border-gray-500/30 bg-gray-500/5;
+}
+.doc-content .callout-quote .callout-title {
+  @apply bg-gray-500/10 text-gray-600 dark:text-gray-400;
+}
+
+/* Standard blockquotes (not callouts) */
+.doc-content blockquote:not(.callout) {
   @apply border-l-4 border-primary my-4 py-3 px-5 bg-muted/50 rounded-r-lg;
 }
 
-.doc-content blockquote p {
+.doc-content blockquote:not(.callout) p {
   @apply m-0 text-muted-foreground;
 }
 
@@ -713,6 +824,47 @@
 
 .category-card .more-items {
   @apply text-muted-foreground italic;
+}
+
+/* Related Section Styles */
+.doc-content .related-section {
+  @apply mt-12 mb-8 rounded-xl border border-border bg-gradient-to-br from-muted/50 to-muted/20 overflow-hidden;
+}
+
+.doc-content .related-header {
+  @apply flex items-center gap-2.5 px-5 py-3.5 border-b border-border bg-muted/50 font-semibold text-foreground;
+}
+
+.doc-content .related-header svg {
+  @apply text-primary;
+}
+
+.doc-content .related-links {
+  @apply p-2;
+}
+
+.doc-content .related-links ul {
+  @apply list-none p-0 m-0 grid gap-1;
+}
+
+.doc-content .related-links li {
+  @apply m-0;
+}
+
+.doc-content .related-links li a {
+  @apply flex items-center gap-2.5 px-3 py-2.5 rounded-lg 
+    text-foreground no-underline font-normal
+    hover:bg-primary/10 hover:text-primary
+    transition-all duration-200;
+}
+
+.doc-content .related-links li a::before {
+  content: '';
+  @apply w-1.5 h-1.5 rounded-full bg-primary/40;
+}
+
+.doc-content .related-links li a:hover::before {
+  @apply bg-primary;
 }
 
 /* Breadcrumbs */

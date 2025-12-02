@@ -8,6 +8,7 @@ publish: true
 tags:
   - dotnet
   - moc
+sort_weight: 1
 ---
 
 [[./dotnet-moc|.Net Moc]]

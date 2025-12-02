@@ -15,11 +15,27 @@ let highlighterPromise: ReturnType<typeof createHighlighter> | null = null;
 async function getHighlighter() {
   if (!highlighterPromise) {
     highlighterPromise = createHighlighter({
-      themes: ['github-dark', 'github-light'],
+      themes: ['github-dark', 'github-light', 'nord', 'dracula'],
       langs: Object.keys(bundledLanguages) as BundledLanguage[],
     });
   }
   return highlighterPromise;
+}
+
+// Generate slug from heading text
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^\w\s-]/g, '') // Remove special chars
+    .replace(/\s+/g, '-') // Spaces to dashes
+    .replace(/-+/g, '-') // Multiple dashes to single
+    .trim();
+}
+
+export interface TocItem {
+  id: string;
+  text: string;
+  level: number;
 }
 
 export interface TreeNode {
@@ -28,6 +44,7 @@ export interface TreeNode {
   path: string;
   type: 'file' | 'folder';
   children?: TreeNode[];
+  sortWeight?: number;
 }
 
 export interface DocContent {
@@ -35,6 +52,9 @@ export interface DocContent {
   content: string;
   frontmatter: Record<string, unknown>;
   breadcrumbs: { name: string; path: string }[];
+  toc: TocItem[];
+  readingTime: number;
+  wordCount: number;
 }
 
 export interface TagInfo {
@@ -55,18 +75,35 @@ function formatName(name: string): string {
 // Folders to hide from sidebar (but still accessible via URL)
 const HIDDEN_FOLDERS = ['glossary'];
 
+// Default sort weight for items without explicit weight
+const DEFAULT_SORT_WEIGHT = 500;
+
+// Get sort_weight from frontmatter of a file or folder's index.md
+function getSortWeight(itemPath: string, isDirectory: boolean): number {
+  try {
+    let filePath = itemPath;
+    if (isDirectory) {
+      // For folders, check index.md
+      filePath = path.join(itemPath, 'index.md');
+    }
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf8');
+      const parsed = matter(content);
+      if (typeof parsed.data.sort_weight === 'number') {
+        return parsed.data.sort_weight;
+      }
+    }
+  } catch (e) {
+    // Ignore errors
+  }
+  return DEFAULT_SORT_WEIGHT;
+}
+
 function buildTree(dir: string, basePath: string = ''): TreeNode[] {
   const items = fs.readdirSync(dir, { withFileTypes: true });
   const tree: TreeNode[] = [];
 
-  // Sort items: folders first, then files, alphabetically
-  const sortedItems = items.sort((a, b) => {
-    if (a.isDirectory() && !b.isDirectory()) return -1;
-    if (!a.isDirectory() && b.isDirectory()) return 1;
-    return a.name.localeCompare(b.name);
-  });
-
-  for (const item of sortedItems) {
+  for (const item of items) {
     // Skip hidden files and non-markdown files
     if (item.name.startsWith('.')) continue;
     if (item.name.startsWith('_')) continue;
@@ -80,22 +117,28 @@ function buildTree(dir: string, basePath: string = ''): TreeNode[] {
       const children = buildTree(itemPath, relativePath);
       // Only add folders that have content
       if (children.length > 0) {
+        const sortWeight = getSortWeight(itemPath, true);
         tree.push({
           name: formatName(item.name),
           path: relativePath,
           type: 'folder',
           children,
+          sortWeight,
         });
       }
     } else if (item.name.endsWith('.md')) {
-      // Read frontmatter to get title
+      // Read frontmatter to get title and sort_weight
       const filePath = path.join(dir, item.name);
       let title = formatName(item.name);
+      let sortWeight = DEFAULT_SORT_WEIGHT;
       try {
         const content = fs.readFileSync(filePath, 'utf8');
         const parsed = matter(content);
         if (parsed.data.title) {
           title = parsed.data.title;
+        }
+        if (typeof parsed.data.sort_weight === 'number') {
+          sortWeight = parsed.data.sort_weight;
         }
       } catch (e) {
         // Use formatted name as fallback
@@ -105,9 +148,25 @@ function buildTree(dir: string, basePath: string = ''): TreeNode[] {
         title,
         path: relativePath.replace(/\.md$/, ''),
         type: 'file',
+        sortWeight,
       });
     }
   }
+
+  // Sort: folders first, then by sort_weight asc, then by name asc
+  tree.sort((a, b) => {
+    // Folders first
+    if (a.type === 'folder' && b.type !== 'folder') return -1;
+    if (a.type !== 'folder' && b.type === 'folder') return 1;
+    
+    // Then by sort_weight
+    const weightA = a.sortWeight ?? DEFAULT_SORT_WEIGHT;
+    const weightB = b.sortWeight ?? DEFAULT_SORT_WEIGHT;
+    if (weightA !== weightB) return weightA - weightB;
+    
+    // Then by name
+    return a.name.localeCompare(b.name);
+  });
 
   return tree;
 }
@@ -340,30 +399,77 @@ export async function getDocContent(slugPath: string): Promise<DocContent | null
       const slug = link.toLowerCase().replace(/\s+/g, '-');
       return `[${link}](/docs/${slug})`;
     })
-    // Handle Obsidian callouts > [!note], > [!warning], etc.
-    .replace(/^>\s*\[!(\w+)\]\s*(.*)$/gm, (_, type, title) => {
-      const icons: Record<string, string> = {
-        note: '📝',
-        tip: '💡',
-        warning: '⚠️',
-        danger: '🚨',
-        info: '📌',
-        example: '📋',
-        question: '❓',
-        quote: '💬',
-        success: '✅',
-        failure: '❌',
-        bug: '🐛',
-      };
-      const icon = icons[type.toLowerCase()] || '📝';
-      return `> **${icon} ${title || type.charAt(0).toUpperCase() + type.slice(1)}**`;
-    })
     // Clean up Obsidian-style embeds ![[file]]
     .replace(/!\[\[([^\]]+)\]\]/g, (_, file) => {
       return `*[Embedded: ${file}]*`;
     })
     // Handle #tags by converting to styled spans (will be rendered as text)
     .replace(/(?<!\S)#([a-zA-Z][a-zA-Z0-9-_]*)/g, '`#$1`');
+
+  // Handle Obsidian callouts - convert to custom HTML before markdown processing
+  // Matches > [!type] optional title followed by > content lines
+  const calloutRegex = /^>\s*\[!(\w+)\]\s*(.*?)$((?:\n>\s?.*$)*)/gm;
+  markdownContent = markdownContent.replace(calloutRegex, (_, type, title, body) => {
+    const calloutType = type.toLowerCase();
+    const calloutConfig: Record<string, { icon: string; color: string; bgColor: string }> = {
+      note: { icon: '📝', color: 'blue', bgColor: 'blue' },
+      tip: { icon: '💡', color: 'green', bgColor: 'green' },
+      hint: { icon: '💡', color: 'green', bgColor: 'green' },
+      important: { icon: '❗', color: 'purple', bgColor: 'purple' },
+      warning: { icon: '⚠️', color: 'yellow', bgColor: 'yellow' },
+      caution: { icon: '⚠️', color: 'yellow', bgColor: 'yellow' },
+      danger: { icon: '🚨', color: 'red', bgColor: 'red' },
+      error: { icon: '🚨', color: 'red', bgColor: 'red' },
+      info: { icon: 'ℹ️', color: 'blue', bgColor: 'blue' },
+      example: { icon: '📋', color: 'purple', bgColor: 'purple' },
+      question: { icon: '❓', color: 'cyan', bgColor: 'cyan' },
+      quote: { icon: '💬', color: 'gray', bgColor: 'gray' },
+      success: { icon: '✅', color: 'green', bgColor: 'green' },
+      check: { icon: '✅', color: 'green', bgColor: 'green' },
+      done: { icon: '✅', color: 'green', bgColor: 'green' },
+      failure: { icon: '❌', color: 'red', bgColor: 'red' },
+      fail: { icon: '❌', color: 'red', bgColor: 'red' },
+      bug: { icon: '🐛', color: 'red', bgColor: 'red' },
+      abstract: { icon: '📄', color: 'cyan', bgColor: 'cyan' },
+      summary: { icon: '📄', color: 'cyan', bgColor: 'cyan' },
+      todo: { icon: '☑️', color: 'purple', bgColor: 'purple' },
+    };
+    
+    const config = calloutConfig[calloutType] || { icon: '📝', color: 'blue', bgColor: 'blue' };
+    const displayTitle = title || calloutType.charAt(0).toUpperCase() + calloutType.slice(1);
+    
+    // Clean body content (remove leading > and spaces)
+    const bodyContent = body
+      .split('\n')
+      .map((line: string) => line.replace(/^>\s?/, ''))
+      .join('\n')
+      .trim();
+    
+    return `<div class="callout callout-${calloutType}" data-callout="${calloutType}">
+<div class="callout-title"><span class="callout-icon">${config.icon}</span><span class="callout-title-text">${displayTitle}</span></div>
+<div class="callout-content">
+
+${bodyContent}
+
+</div>
+</div>`;
+  });
+
+  // Calculate word count and reading time
+  const plainText = markdownContent.replace(/```[\s\S]*?```/g, '').replace(/[#*`\[\]()]/g, '');
+  const wordCount = plainText.split(/\s+/).filter(word => word.length > 0).length;
+  const readingTime = Math.max(1, Math.ceil(wordCount / 200)); // ~200 words per minute
+
+  // Extract table of contents from headings
+  const toc: TocItem[] = [];
+  const headingRegex = /^(#{2,4})\s+(.+)$/gm;
+  let headingMatch;
+  while ((headingMatch = headingRegex.exec(markdownContent)) !== null) {
+    const level = headingMatch[1].length;
+    const text = headingMatch[2].replace(/\*\*/g, '').replace(/`/g, '').trim();
+    const id = slugify(text);
+    toc.push({ id, text, level });
+  }
 
   // Process markdown to HTML
   const processedContent = await remark()
@@ -372,6 +478,33 @@ export async function getDocContent(slugPath: string): Promise<DocContent | null
     .process(markdownContent);
 
   let content = processedContent.toString();
+
+  // Add IDs to headings for anchor links
+  content = content.replace(/<(h[2-4])>(.*?)<\/\1>/g, (_, tag, text) => {
+    const cleanText = text.replace(/<[^>]*>/g, '').trim();
+    const id = slugify(cleanText);
+    return `<${tag} id="${id}"><a href="#${id}" class="heading-anchor" aria-hidden="true">#</a>${text}</${tag}>`;
+  });
+
+  // Wrap "Related", "See Also", "Backlinks" sections in special containers
+  const specialSections = ['related', 'see-also', 'backlinks', 'references', 'further-reading', 'related-areas'];
+  specialSections.forEach(sectionId => {
+    const regex = new RegExp(`(<h2 id="${sectionId}"[^>]*>.*?</h2>)([\\s\\S]*?)(?=<h[12]|$)`, 'gi');
+    content = content.replace(regex, (match, heading, body) => {
+      // Extract just the list from the body
+      const listMatch = body.match(/<ul>([\s\S]*?)<\/ul>/);
+      if (listMatch) {
+        return `<div class="related-section">
+          <div class="related-header">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span>Related</span>
+          </div>
+          <div class="related-links">${listMatch[0]}</div>
+        </div>`;
+      }
+      return match;
+    });
+  });
 
   // Highlight code blocks with Shiki
   try {
@@ -407,7 +540,7 @@ export async function getDocContent(slugPath: string): Promise<DocContent | null
         const wrappedCode = `<div class="code-block-wrapper group relative">
           <div class="code-block-header flex items-center justify-between border-b border-border bg-muted/80 px-4 py-2 rounded-t-lg">
             <span class="text-xs font-mono text-muted-foreground">${lang}</span>
-            <button class="copy-button opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted-foreground hover:text-foreground" onclick="navigator.clipboard.writeText(this.closest('.code-block-wrapper').querySelector('pre code').textContent)">Copy</button>
+            <button class="copy-button opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-accent" type="button">Copy</button>
           </div>
           <div class="code-block-content overflow-x-auto rounded-b-lg">${highlighted}</div>
         </div>`;
@@ -432,7 +565,7 @@ export async function getDocContent(slugPath: string): Promise<DocContent | null
       return `<div class="code-block-wrapper group relative">
         <div class="code-block-header flex items-center justify-between border-b border-border bg-muted/80 px-4 py-2 rounded-t-lg">
           <span class="text-xs font-mono text-muted-foreground">code</span>
-          <button class="copy-button opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted-foreground hover:text-foreground" onclick="navigator.clipboard.writeText(this.closest('.code-block-wrapper').querySelector('pre code').textContent)">Copy</button>
+          <button class="copy-button opacity-0 group-hover:opacity-100 transition-opacity text-xs text-muted-foreground hover:text-foreground px-2 py-1 rounded hover:bg-accent" type="button">Copy</button>
         </div>
         <div class="code-block-content overflow-x-auto rounded-b-lg"><pre class="shiki github-dark" style="background-color:#24292e"><code>${codeContent}</code></pre></div>
       </div>`;
@@ -472,5 +605,8 @@ export async function getDocContent(slugPath: string): Promise<DocContent | null
     content,
     frontmatter,
     breadcrumbs,
+    toc,
+    readingTime,
+    wordCount,
   };
 }
