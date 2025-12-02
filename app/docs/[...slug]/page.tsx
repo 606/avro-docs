@@ -1,4 +1,4 @@
-ßßimport { notFound } from 'next/navigation';
+import { notFound } from 'next/navigation';
 import { getDocContent, getAllDocPaths } from '@/lib/docs';
 import { Clock, BookOpen } from 'lucide-react';
 import { TableOfContents } from '@/components/table-of-contents';

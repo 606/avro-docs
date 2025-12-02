@@ -1,4 +1,4 @@
-ßßimport { Suspense } from 'react';
+import { Suspense } from 'react';
 import { ErrorContent } from '@/components/auth/error-content';
 
 function ErrorLoading() {
