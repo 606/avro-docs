@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { ResizableLayout } from '@/components/resizable-layout';
+import { CodeBlockCopy } from '@/components/code-block-copy';
 import { getDocsTree, getAllTags } from '@/lib/docs';
-import { AuthProvider } from '@/components/auth-provider';
+import { SessionProvider } from '@/components/providers/session-provider';
 
 export const metadata: Metadata = {
   title: 'Avro Docs',
-  description: 'Documentation for Avro projects',
+  description: 'Documentaßßtion for Avro projects',
 };
 
 // Script to prevent theme flash - runs before page renders
@@ -71,11 +72,12 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-screen">
-        <AuthProvider>
+        <SessionProvider>
+          <CodeBlockCopy />
           <ResizableLayout tree={docsTree} tags={allTags}>
             {children}
           </ResizableLayout>
-        </AuthProvider>
+        </SessionProvider>
       </body>
     </html>
   );

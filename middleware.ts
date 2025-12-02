@@ -1,54 +1,37 @@
-import { NextResponse } from "next/server";
-import { getToken } from "next-auth/jwt";
-import type { NextRequest } from "next/server";
+import { withAuth } from 'next-auth/middleware';
+import { NextResponse } from 'next/server';
 
-// Публічні шляхи - доступні всім без авторизації
-const publicPaths = [
-  "/",
-  "/api/auth",
-  "/auth/error",
-  "/debug/auth",
-  "/tags",
-];
-
-// Перевірка чи шлях публічний
-function isPublicPath(pathname: string): boolean {
-  return publicPaths.some(path => 
-    pathname === path || pathname.startsWith(`${path}/`)
-  );
-}
-
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Пропускаємо статичні файли та публічні шляхи
-  if (
-    pathname.startsWith("/_next") ||
-    pathname.startsWith("/static") ||
-    pathname.includes(".") ||
-    isPublicPath(pathname)
-  ) {
+export default withAuth(
+  function middleware(req) {
     return NextResponse.next();
+  },
+  {
+    callbacks: {
+      authorized: ({ token, req }) => {
+        // Define which paths require authentication
+        const privatePaths = ['/docs/pet-projects', '/docs/obsidian'];
+        const path = req.nextUrl.pathname;
+        
+        // Check if the current path is private
+        const isPrivatePath = privatePaths.some(
+          (privatePath) => path.startsWith(privatePath)
+        );
+        
+        // If it's a private path, require authentication
+        if (isPrivatePath) {
+          return !!token;
+        }
+        
+        // Public paths don't require authentication
+        return true;
+      },
+    },
   }
-
-  // Для /docs - просто пропускаємо, захист реалізований через DocContentWrapper
-  // Це дозволяє показувати гарний UI замість редиректу
-  if (pathname.startsWith("/docs")) {
-    return NextResponse.next();
-  }
-
-  return NextResponse.next();
-}
+);
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (public folder)
-     */
-    "/((?!_next/static|_next/image|favicon.ico|.*\\..*|api/auth).*)",
+    // Match all paths except static files and api routes (except auth)
+    '/((?!_next/static|_next/image|favicon.ico|api/auth).*)',
   ],
 };

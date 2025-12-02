@@ -59,6 +59,7 @@ import {
 import { Palette, Check, Monitor, Tag } from "lucide-react"
 import { AuthButton } from "@/components/auth-button"
 import { useSession } from "next-auth/react"
+import { UserButton } from "@/components/auth/user-button"
 
 interface ResizableLayoutProps {
   tree: TreeNode[]
@@ -732,35 +733,32 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
 
         <ResizablePanel defaultSize={hasDocsAccess ? 80 : 100} minSize={50}>
           <div className="flex h-screen flex-col">
-            {/* Header - only for authorized users */}
-            {hasDocsAccess && (
-              <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-8 w-8"
-                      onClick={() => setIsCollapsed(!isCollapsed)}
-                    >
-                      {isCollapsed ? (
-                        <PanelLeftOpen className="h-4 w-4" />
-                      ) : (
-                        <PanelLeftClose className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    {isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                  </TooltipContent>
-                </Tooltip>
-                <Separator orientation="vertical" className="h-4" />
-                <Breadcrumbs />
-                <div className="ml-auto">
-                  <AuthButton />
-                </div>
-              </header>
-            )}
+            <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8"
+                    onClick={() => setIsCollapsed(!isCollapsed)}
+                  >
+                    {isCollapsed ? (
+                      <PanelLeftOpen className="h-4 w-4" />
+                    ) : (
+                      <PanelLeftClose className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                </TooltipContent>
+              </Tooltip>
+              <Separator orientation="vertical" className="h-4" />
+              <Breadcrumbs />
+              <div className="ml-auto">
+                <UserButton />
+              </div>
+            </header>
             <main className="flex-1 overflow-auto">
               <div className="max-w-4xl mx-auto p-6">
                 {children}
