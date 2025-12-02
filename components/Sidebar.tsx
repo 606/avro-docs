@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { ChevronRight, FileText, Folder, FolderOpen, Search, Menu, X, Home } from 'lucide-react';
+import { useSession } from 'next-auth/react';
+import { ChevronRight, FileText, Folder, FolderOpen, Search, Menu, X, Home, Lock } from 'lucide-react';
 import { TreeNode } from '@/lib/docs';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,12 @@ export default function Sidebar({ tree }: SidebarProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTree, setFilteredTree] = useState(tree);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const { data: session, status } = useSession();
+
+  // Перевірка доступу до документації
+  const appRole = session?.user?.appRole;
+  const isPrivileged = session?.user?.isPrivileged;
+  const hasDocsAccess = appRole === 'admin' || appRole === 'member' || isPrivileged === true;
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -77,7 +84,23 @@ export default function Sidebar({ tree }: SidebarProps) {
         {/* Tree */}
         <ScrollArea className="flex-1">
           <nav className="p-2">
-            <TreeView nodes={filteredTree} depth={0} />
+            {hasDocsAccess ? (
+              <TreeView nodes={filteredTree} depth={0} />
+            ) : (
+              <div className="px-3 py-4 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2 mb-2">
+                  <Lock className="h-4 w-4" />
+                  <span className="font-medium">Access Restricted</span>
+                </div>
+                <p className="text-xs">
+                  {status === 'loading'
+                    ? 'Loading...'
+                    : !session
+                      ? 'Sign in to access documentation.'
+                      : 'Join the avrocc organization to view docs.'}
+                </p>
+              </div>
+            )}
           </nav>
         </ScrollArea>
       </aside>

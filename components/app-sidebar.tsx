@@ -3,6 +3,7 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
+import { useSession } from "next-auth/react"
 import {
   BookOpen,
   ChevronRight,
@@ -10,6 +11,7 @@ import {
   Folder,
   FolderOpen,
   Home,
+  Lock,
   Moon,
   Search,
   Sun,
@@ -62,9 +64,18 @@ export function AppSidebar({ tree }: AppSidebarProps) {
   const [open, setOpen] = React.useState(false)
   const [isDark, setIsDark] = React.useState(true)
   const router = useRouter()
+  const { data: session, status } = useSession()
   const allDocs = React.useMemo(() => flattenTree(tree), [tree])
 
+  // Перевірка доступу до документації
+  const appRole = session?.user?.appRole
+  const isPrivileged = session?.user?.isPrivileged
+  const hasDocsAccess = appRole === "admin" || appRole === "member" || isPrivileged === true
+
   React.useEffect(() => {
+    // Хоткей пошуку тільки для тих, хто має доступ
+    if (!hasDocsAccess) return
+
     const down = (e: KeyboardEvent) => {
       if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
         e.preventDefault()
@@ -73,7 +84,7 @@ export function AppSidebar({ tree }: AppSidebarProps) {
     }
     document.addEventListener("keydown", down)
     return () => document.removeEventListener("keydown", down)
-  }, [])
+  }, [hasDocsAccess])
 
   const handleSelect = (path: string) => {
     router.push(`/docs/${path}`)
@@ -99,17 +110,19 @@ export function AppSidebar({ tree }: AppSidebarProps) {
               </SidebarMenuButton>
             </SidebarMenuItem>
           </SidebarMenu>
-          <Button
-            variant="outline"
-            className="relative h-9 w-full justify-start rounded-md text-sm text-muted-foreground sm:pr-12 group-data-[collapsible=icon]:hidden"
-            onClick={() => setOpen(true)}
-          >
-            <Search className="mr-2 h-4 w-4" />
-            Search docs...
-            <kbd className="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
-              <span className="text-xs">⌘</span>K
-            </kbd>
-          </Button>
+          {hasDocsAccess && (
+            <Button
+              variant="outline"
+              className="relative h-9 w-full justify-start rounded-md text-sm text-muted-foreground sm:pr-12 group-data-[collapsible=icon]:hidden"
+              onClick={() => setOpen(true)}
+            >
+              <Search className="mr-2 h-4 w-4" />
+              Search docs...
+              <kbd className="pointer-events-none absolute right-1.5 top-2 hidden h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium opacity-100 sm:flex">
+                <span className="text-xs">⌘</span>K
+              </kbd>
+            </Button>
+          )}
         </SidebarHeader>
 
         <SidebarContent>
@@ -130,11 +143,28 @@ export function AppSidebar({ tree }: AppSidebarProps) {
           <SidebarGroup>
             <SidebarGroupLabel>Documentation</SidebarGroupLabel>
             <SidebarGroupContent>
-              <SidebarMenu>
-                {tree.map((node) => (
-                  <TreeItem key={node.path} node={node} />
-                ))}
-              </SidebarMenu>
+              {hasDocsAccess ? (
+                <SidebarMenu>
+                  {tree.map((node) => (
+                    <TreeItem key={node.path} node={node} />
+                  ))}
+                </SidebarMenu>
+              ) : (
+                <div className="px-2 py-3 text-sm text-muted-foreground group-data-[collapsible=icon]:hidden">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Lock className="size-4" />
+                    <span>Access Restricted</span>
+                  </div>
+                  <p className="text-xs">
+                    {status === "loading" 
+                      ? "Loading..." 
+                      : !session 
+                        ? "Sign in to access documentation."
+                        : "Join the avrocc organization to view docs."
+                    }
+                  </p>
+                </div>
+              )}
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>

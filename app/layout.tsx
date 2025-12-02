@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { ResizableLayout } from '@/components/resizable-layout';
 import { getDocsTree, getAllTags } from '@/lib/docs';
+import { AuthProvider } from '@/components/auth-provider';
 
 export const metadata: Metadata = {
   title: 'Avro Docs',
@@ -70,9 +71,11 @@ export default function RootLayout({
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
       <body className="min-h-screen">
-        <ResizableLayout tree={docsTree} tags={allTags}>
-          {children}
-        </ResizableLayout>
+        <AuthProvider>
+          <ResizableLayout tree={docsTree} tags={allTags}>
+            {children}
+          </ResizableLayout>
+        </AuthProvider>
       </body>
     </html>
   );

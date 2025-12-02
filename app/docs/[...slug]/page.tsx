@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation';
 import { getDocContent, getAllDocPaths } from '@/lib/docs';
+import { DocContentWrapper } from '@/components/doc-content-wrapper';
 
 interface DocPageProps {
   params: Promise<{
@@ -42,8 +43,10 @@ export default async function DocPage({ params }: DocPageProps) {
   }
 
   return (
-    <article className="max-w-4xl">
-      <div className="doc-content" dangerouslySetInnerHTML={{ __html: doc.content }} />
-    </article>
+    <DocContentWrapper title={doc.title}>
+      <article className="max-w-4xl">
+        <div className="doc-content" dangerouslySetInnerHTML={{ __html: doc.content }} />
+      </article>
+    </DocContentWrapper>
   );
 }
