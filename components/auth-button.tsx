@@ -6,7 +6,6 @@ import {
   LogOut, 
   User, 
   ChevronDown, 
-  BookOpen, 
   Shield, 
   Users, 
   Settings,
@@ -17,6 +16,7 @@ import {
   UserX
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/logo";
 import {
   Dialog,
   DialogContent,
@@ -196,9 +196,7 @@ export function AuthButton() {
       <DialogContent className="sm:max-w-[400px]">
         <DialogHeader className="space-y-1">
           <div className="flex items-center justify-center mb-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary">
-              <BookOpen className="h-6 w-6 text-primary-foreground" />
-            </div>
+            <Logo size="md" />
           </div>
           <DialogTitle className="text-2xl text-center">
             Welcome back

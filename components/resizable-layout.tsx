@@ -4,7 +4,6 @@ import * as React from "react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
-  BookOpen,
   ChevronDown,
   ChevronRight,
   FileText,
@@ -26,6 +25,7 @@ import {
 import { TreeNode, TagInfo } from "@/lib/docs"
 import { cn } from "@/lib/utils"
 import { getFolderIcon } from "@/lib/folder-icons"
+import { Logo } from "@/components/logo"
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Button } from "@/components/ui/button"
@@ -216,20 +216,15 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Link href="/" className="flex items-center justify-center">
-                      <BookOpen className="h-5 w-5 text-sidebar-primary" />
+                      <Logo size="sm" />
                     </Link>
                   </TooltipTrigger>
-                  <TooltipContent side="right">Avro Docs</TooltipContent>
+                  <TooltipContent side="right">avro.cc</TooltipContent>
                 </Tooltip>
               ) : (
-                <Link href="/" className="flex items-center gap-2 group">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-sidebar-primary to-sidebar-primary/80 text-sidebar-primary-foreground shadow-sm group-hover:shadow-md transition-shadow">
-                    <BookOpen className="h-4 w-4" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="font-semibold text-sidebar-foreground">Avro Docs</span>
-                    <span className="text-[10px] text-muted-foreground">{allDocs.length} documents</span>
-                  </div>
+                <Link href="/" className="flex items-center gap-2.5 group">
+                  <Logo size="sm" />
+                  <span className="font-semibold text-sidebar-foreground">avro.cc</span>
                 </Link>
               )}
             </div>
@@ -737,36 +732,35 @@ export function ResizableLayout({ tree, tags, children }: ResizableLayoutProps) 
 
         <ResizablePanel defaultSize={hasDocsAccess ? 80 : 100} minSize={50}>
           <div className="flex h-screen flex-col">
-            <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-              {hasDocsAccess && (
-                <>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setIsCollapsed(!isCollapsed)}
-                      >
-                        {isCollapsed ? (
-                          <PanelLeftOpen className="h-4 w-4" />
-                        ) : (
-                          <PanelLeftClose className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      {isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-                    </TooltipContent>
-                  </Tooltip>
-                  <Separator orientation="vertical" className="h-4" />
-                </>
-              )}
-              <Breadcrumbs />
-              <div className="ml-auto">
-                <AuthButton />
-              </div>
-            </header>
+            {/* Header - only for authorized users */}
+            {hasDocsAccess && (
+              <header className="flex h-14 shrink-0 items-center gap-2 border-b px-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => setIsCollapsed(!isCollapsed)}
+                    >
+                      {isCollapsed ? (
+                        <PanelLeftOpen className="h-4 w-4" />
+                      ) : (
+                        <PanelLeftClose className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                  </TooltipContent>
+                </Tooltip>
+                <Separator orientation="vertical" className="h-4" />
+                <Breadcrumbs />
+                <div className="ml-auto">
+                  <AuthButton />
+                </div>
+              </header>
+            )}
             <main className="flex-1 overflow-auto">
               <div className="max-w-4xl mx-auto p-6">
                 {children}
